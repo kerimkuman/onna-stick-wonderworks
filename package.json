@@ -1,0 +1,19 @@
+{
+    "name":  "onna-stick-wonderworks-vite-site",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "index.js",
+    "scripts":  {
+                    "preview":  "vite preview",
+                    "build":  "vite build",
+                    "dev":  "vite"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "devDependencies":  {
+                            "vite":  "^7.1.9"
+                        }
+}

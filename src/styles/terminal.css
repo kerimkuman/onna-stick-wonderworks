@@ -1,0 +1,77 @@
+/* Terminal Styles */
+:root { 
+    --green: #00fd55; 
+    --phosphor: #39ff14; 
+}
+#faq { padding: 1rem; }
+.monitor { 
+    padding: 3.5vmin 3.5vmin 5vmin; 
+    background: linear-gradient(180deg, #f0e8d8 0%, #e8dcc8 40%, #d5c9b3 100%);
+    border-radius: 1.2rem 1.2rem 0.8rem 0.8rem;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), inset 0 2px 1px rgba(255, 255, 255, 0.4), inset 0 -3px 8px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 10;
+}
+.monitor::before { content: ''; position: absolute; bottom: 2.2vmin; left: 50%; transform: translateX(-50%); width: 20%; height: 1.2vmin; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.15), transparent); border-radius: 0.3vmin; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+.power-button { position: absolute; bottom: 1.8vmin; right: 3vmin; width: 3.5vmin; height: 3.5vmin; background: linear-gradient(135deg, #bbb 0%, #888 100%); border-radius: 50%; cursor: pointer; box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: all 0.1s; z-index: 100; }
+.power-button:focus { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.power-button:active { box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2); }
+.power-led { width: 1.2vmin; height: 1.2vmin; border-radius: 50%; background: #ff3333; box-shadow: 0 0 8px #ff3333, inset 0 -1px 2px rgba(0,0,0,0.5); transition: all 0.3s; }
+.monitor.power-on .power-led { background: #4eff4e; box-shadow: 0 0 12px #4eff4e, inset 0 -1px 2px rgba(0,0,0,0.3); }
+.screen { position: relative; background: linear-gradient(135deg, #a39585 0%, #8a7d6d 100%); padding: 2.5vmin; border-radius: 0.6rem; box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.2); }
+.crt { position: relative; width: min(88vw, 88ch); height: min(68vh, 62ch); background: radial-gradient(ellipse at 50% 40%, #062b19 0%, #04110a 65%, #010502 100%); font-family: "VT323", monospace; color: var(--phosphor); overflow: hidden; border-radius: 3% / 4%; box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.7), inset 0 0 40px rgba(57, 255, 20, 0.2), inset 0 0 20px rgba(57, 255, 20, 0.15), inset 0 0 8px rgba(57, 255, 20, 0.25); }
+.monitor:not(.power-on) .crt { background: #000; box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.7); }
+.crt-content { position: absolute; inset: -3%; transform-style: preserve-3d; transform: perspective(400px) translateZ(-40px) scale(1.15); filter: contrast(1.05); }
+.crt-content::before { content: ""; position: absolute; inset: 0; background: radial-gradient( circle at center, transparent 0%, transparent 30%, rgba(0, 0, 0, 0.1) 60%, rgba(0, 0, 0, 0.3) 85%, rgba(0, 0, 0, 0.5) 100% ); pointer-events: none; z-index: 50; border-radius: 3% / 4%; }
+.monitor:not(.power-on) .crt-content { animation: crt-power-off 0.55s forwards ease-in-out; }
+.monitor.power-on .crt-content { animation: crt-power-on 1.5s forwards linear; }
+.crt::before { content: ""; position: absolute; inset: 0; background: linear-gradient( rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50% ); background-size: 100% 4px; z-index: 100; pointer-events: none; border-radius: 3% / 4%; animation: scanline 8s linear infinite; }
+.crt::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(57,255,20,0.03) 100%), linear-gradient(90deg, rgba(255, 0, 0, 0.06) 0%, transparent 10%, transparent 90%, rgba(0, 0, 255, 0.06) 100% ); z-index: 99; pointer-events: none; border-radius: 3% / 4%; mix-blend-mode: screen; }
+.crt-flicker { position: absolute; inset: 0; background: rgba(18, 16, 16, 0.03); opacity: 0; z-index: 98; pointer-events: none; animation: refresh-flicker 0.11s infinite; border-radius: 3% / 4%; }
+.screen::after { content: ""; position: absolute; top: 8%; left: 50%; transform: translateX(-50%) rotate(-5deg); width: 60%; height: 35%; background: radial-gradient(ellipse at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 50%), radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08) 0%, transparent 60%); pointer-events: none; z-index: 10; border-radius: 50%; filter: blur(25px); mix-blend-mode: overlay; }
+.sky { position: absolute; inset: 0; pointer-events: none; color: var(--phosphor); opacity: 0.08; z-index: 0; }
+.sky .star { position: absolute; animation: twinkle linear infinite; }
+.boot-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 2rem; z-index: 200; }
+.boot { width: min(75ch, 90%); text-shadow: 0 0 8px rgba(57, 255, 20, 0.5); text-align: center; }
+.title { letter-spacing: 6px; color: var(--green); font-size: 2rem; text-shadow: -2px 0 0 rgba(255, 0, 0, 0.4), 2px 0 0 rgba(0, 255, 255, 0.4), 0 0 10px var(--green), 0 0 30px rgba(57, 255, 20, 0.3); margin-bottom: 1.5rem; }
+.banner { max-height: 28vh; overflow: hidden; margin: 0.25rem 0 0.5rem; }
+.banner pre { margin: 0; line-height: 0.9; font-size: 10px; opacity: 0.85; text-align: center; }
+@media (min-width: 1200px) { .banner pre { font-size: 12px; } }
+@media (max-width: 900px) { .banner { display: none; } }
+.bootlines { white-space: pre-wrap; line-height: 1.4; min-height: 4em; text-shadow: -0.5px 0 0 rgba(255, 0, 0, 0.2), 0.5px 0 0 rgba(0, 255, 255, 0.2), 0 0 6px rgba(57, 255, 20, 0.4); }
+.cursor { display: inline-block; width: 0.6ch; border-right: 0.35em solid var(--phosphor); animation: blink 0.9s step-end infinite; box-shadow: 0 0 4px rgba(57, 255, 20, 0.6); }
+.press { color: var(--green); margin-top: 1.5rem; animation: pulse 2s ease-in-out infinite; text-shadow: 0 0 8px rgba(57, 255, 20, 0.5); }
+.panes { position: absolute; inset: 0; display: none; grid-template-columns: 1fr 1fr; gap: 14px; padding: 1.2rem; z-index: 200; }
+.pane { border: 1px solid rgba(0, 255, 85, 0.25); padding: 14px; background: rgba(0, 20, 0, 0.35); box-shadow: inset 0 0 0 1px rgba(0, 255, 85, 0.08), 0 0 30px rgba(0, 255, 85, 0.08); overflow: auto; border-radius: 2px; }
+.pane::-webkit-scrollbar { display: none; }
+.pane { scrollbar-width: none; }
+.label { margin-bottom: 0.6rem; font-size: 1.3rem; color: var(--green); text-shadow: -1px 0 0 rgba(255, 0, 0, 0.3), 1px 0 0 rgba(0, 255, 255, 0.3), 0 0 8px rgba(57, 255, 20, 0.6), 0 0 20px rgba(57, 255, 20, 0.3); }
+.list { user-select: none; }
+.q { padding: 5px 8px; margin: 3px 0; font-size: 1.2rem; text-shadow: -0.5px 0 0 rgba(255, 0, 0, 0.25), 0.5px 0 0 rgba(0, 255, 255, 0.25), 0 0 5px rgba(57, 255, 20, 0.4); cursor: pointer; transition: all 0.15s ease; outline: none; }
+.q:focus { outline: 2px solid var(--phosphor); outline-offset: 1px; }
+.q.hover { background: rgba(57, 255, 20, 0.9); color: #001a00; text-shadow: none; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); }
+.q.active::after { content: "  â—‚"; }
+.answer { font-size: 1.2rem; white-space: pre-wrap; line-height: 1.4; text-shadow: -0.5px 0 0 rgba(255, 0, 0, 0.2), 0.5px 0 0 rgba(0, 255, 255, 0.2), 0 0 4px rgba(57, 255, 20, 0.3); cursor: pointer; }
+#muteBtn { position: absolute; top: 12px; right: 14px; width: 40px; height: 40px; background: rgba(0, 20, 0, 0.3); color: var(--phosphor); border: 1px solid rgba(57, 255, 20, 0.3); cursor: pointer; font-size: 20px; z-index: 210; border-radius: 2px; transition: all 0.2s; }
+#muteBtn:hover { background: rgba(57, 255, 20, 0.2); box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); }
+#muteBtn:focus { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.spell { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); color: var(--phosphor); white-space: pre; pointer-events: none; opacity: 0; text-shadow: 0 0 8px rgba(57, 255, 20, 0.6); z-index: 10; }
+.spell.show { animation: spellRise 1400ms ease-out forwards; }
+.crt.game-on .boot-wrap, .crt.game-on #panes, .crt.game-on #sky, .crt.game-on #muteBtn { display: none !important; }
+#game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; z-index: 150; cursor: none; }
+.crt.game-on #game-canvas { display: block; }
+#game-over-screen { position: absolute; inset: 0; z-index: 220; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(2, 8, 5, 0.95); }
+#game-over-screen h2 { font-size: 2rem; color: var(--green); text-shadow: 0 0 8px var(--green); margin-bottom: 1rem; }
+#game-over-contact-btn { margin-top: 1rem; padding: 0.75rem 1.5rem; font-size: 1.5rem; font-family: "VT323", monospace; color: var(--green); background: transparent; border: 2px solid var(--green); text-decoration: none; transition: all 0.2s; cursor: pointer; }
+#game-over-contact-btn:hover { background: var(--green); color: #000; box-shadow: 0 0 15px var(--green); }
+#game-tip { margin-top: 1rem; opacity: 0.7; font-size: 1.1rem; color: var(--green); text-shadow: -0.5px 0 0 rgba(255, 0, 0, 0.2), 0.5px 0 0 rgba(0, 255, 255, 0.2), 0 0 6px rgba(57, 255, 20, 0.4); }
+@keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
+@keyframes scanline { 0% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+@keyframes refresh-flicker { 0%, 100% { opacity: 0.03; } 10% { opacity: 0.08; } 20% { opacity: 0.02; } 30% { opacity: 0.1; } 40% { opacity: 0.01; } 50% { opacity: 0.12; } 60% { opacity: 0.04; } 70% { opacity: 0.06; } 80% { opacity: 0.09; } 90% { opacity: 0.02; } }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spellRise { 0% { opacity: 0; transform: translate(-50%, 8px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -12px); } }
+@keyframes crt-power-on { 0% { transform: scale(1, 0.8) translate3d(0, 0, 0); filter: brightness(30); opacity: 1; } 3.5% { transform: scale(1, 0.8) translate3d(0, 100%, 0); } 3.6% { transform: scale(1, 0.8) translate3d(0, -100%, 0); } 9% { transform: scale(1.3, 0.6) translate3d(0, 100%, 0); } 11% { transform: scale(1, 1) translate3d(0, 0, 0); filter: contrast(0) brightness(0); opacity: 0; } 100% { transform: scale(1, 1) translate3d(0, 0, 0); filter: contrast(1) brightness(1.2) saturate(1.3); opacity: 1; } }
+@keyframes crt-power-off { 0% { transform: scale(1, 1.3) translate3d(0, 0, 0); filter: brightness(1); opacity: 1; } 60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); filter: brightness(10); } 100% { transform: scale(0.000, 0.0001) translate3d(0, 0, 0); filter: brightness(50); opacity: 0; } }
+@media (max-width: 900px) { .panes { grid-template-columns: 1fr; } }
+@media (pointer: coarse) { #game-tip { display: none; } }
