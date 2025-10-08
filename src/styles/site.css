@@ -46,7 +46,6 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* Wonderworks carousel */
 #wonderworks-wrapper { background: #000; justify-content: flex-start; }
 .wonderworks-scroller { position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
-.wonderworks-scroller::-webkit-scrollbar { display: none; }
 .wonderworks-slide { position: relative; flex: 0 0 100vw; height: 100%; scroll-snap-align: start; display: grid; place-items: center; background: #000; }
 .slide-media { max-width: 100vw; max-height: calc(100vh - 76px); max-height: calc(100dvh - 76px); object-fit: contain; display: block; }
 .slide-caption { position: absolute; bottom: 1.5rem; left: 1.5rem; background: rgba(0,0,0,.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding: .75rem 1.5rem; border-radius: 999px; font-size: .875rem; color: #e2e8f0; z-index: 10; }
@@ -147,98 +146,6 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 @media (max-width: 900px) { .panes { grid-template-columns: 1fr } }
 @media (pointer: coarse) { #game-tip { display: none } }
 
-/* prevent text selection during drag */
-body.dragging, .wonderworks-scroller.dragging { user-select: none; }
-.wonderworks-scroller { -ms-overflow-style: none; scrollbar-width: none; }
+/* Carousel styles consolidated: wheel scrolling is now JS-only (carousel.js) */
+/* Header fade behavior controlled by body.in-carousel + .show-on-hover (lines 13-14) */
 .wonderworks-scroller::-webkit-scrollbar { display: none; }
-/* wheel-to-horizontal UX */
-.wonderworks-scroller { -ms-overflow-style: none; scrollbar-width: none; }
-.wonderworks-scroller::-webkit-scrollbar { display: none; }
-.wonderworks-scroller * { user-select: none; }
-/* contain overscroll so the page does not steal wheel events */
-.wonderworks-scroller {
-  overscroll-behavior: contain;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.wonderworks-scroller::-webkit-scrollbar { display: none; }
-
-/* === wheel->horizontal carousel + snap (idempotent) === */
-[data-carousel-track]{
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-behavior:smooth;
-  scroll-snap-type:x mandatory;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
-}
-[data-carousel-track] > *{ scroll-snap-align:start; }
-
-/* === wonderworks scroller snap/wheel (idempotent) === */
-#wonderworks-wrapper .wonderworks-scroller{
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  scroll-behavior:smooth;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
-}
-#wonderworks-wrapper .wonderworks-slide{ scroll-snap-align:start; }
-
-/* header fade remains consistent */
-#site-header{ transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
-#site-header.header-idle{ opacity:.5; }
-body.in-carousel #site-header{ opacity:0; pointer-events:none; }
-body.in-carousel #site-header.show-on-hover{ opacity:1; pointer-events:auto; }
-
-/* === wonderworks scroller: horizontal wheel + snap (idempotent) === */
-#wonderworks-wrapper .wonderworks-scroller{
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  scroll-behavior:smooth;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
-}
-#wonderworks-wrapper .wonderworks-slide{ scroll-snap-align:start; }
-/* Wonderworks patch: carousel scroll helpers */
-[data-carousel-track], .carousel-track, .carousel__track, .slides, .track {
-  scroll-behavior: smooth;
-  overscroll-behavior-inline: contain;
-}
-/* === wonderworks: horizontal scroll + snap (idempotent) === */
-.wonderworks-scroller,
-.ww-scroll-ready {
-  display: flex;
-  gap: clamp(16px, 3vw, 40px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x proximity;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x; /* allow horizontal wheel/touch */
-  padding-bottom: 8px;
-}
-.wonderworks-scroller > *, 
-.ww-scroll-ready > * {
-  flex: 0 0 auto;
-  scroll-snap-align: center;
-}
-
-/* subtle, low-profile scrollbar on desktop */
-.wonderworks-scroller::-webkit-scrollbar,
-.ww-scroll-ready::-webkit-scrollbar { height: 8px; }
-.wonderworks-scroller::-webkit-scrollbar-thumb,
-.ww-scroll-ready::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 8px; }
-
-/* header fade while in carousel */
-body.in-carousel #site-header {
-  transition: opacity .6s cubic-bezier(0.4,0,0.2,1);
-  opacity: .0;
-  pointer-events: none;
-}
-body.in-carousel #site-header:hover,
-body.in-carousel #site-header.show-on-hover {
-  opacity: 1;
-  pointer-events: auto;
-}

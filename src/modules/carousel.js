@@ -3,19 +3,12 @@
 /**
  * Wonderworks carousel
  * - Enforce custom order
- * - Convert vertical mouse wheel to horizontal scroll (passive: false)
- * - Keep native touch, trackpad & keyboard behavior
+ * - Smooth wheel acceleration with Ctrl/Shift modifiers
+ * - Header fade/show-on-hover behavior
+ * - Keyboard arrows
  */
 
-const SELECTORS = [
-  '.wonderworks-scroller',          // your primary class (already in DOM)
-  '[data-carousel-track]',
-  '.carousel-track',
-  '.carousel .track'
-];
-
 const ORDER = [
-  // Make sure these keys appear in your slide data-id OR in filename in <img src=".../key.ext">
   'be-seen-on-every-screen',
   'build-your-legacy',
   'onna-stick-construction',
@@ -27,80 +20,119 @@ const ORDER = [
   'super-sweet'
 ];
 
+function q(sel) { return document.querySelector(sel); }
+
 function getTrack() {
-  for (const sel of SELECTORS) {
-    const el = document.querySelector(sel);
-    if (el) return el;
-  }
-  return null;
+  return q('.wonderworks-scroller')
+      || q('[data-carousel-track]')
+      || q('.carousel-track')
+      || q('.carousel .track')
+      || null;
 }
 
-function extractKey(slide) {
-  // Prefer explicit data-id
-  const explicit = slide.dataset?.id || slide.getAttribute?.('data-id');
-  if (explicit) return explicit.toLowerCase();
-
-  // Fall back to filename in an <img>/<video>/<source>/<iframe> src
-  const media = slide.querySelector?.('img,video,source,iframe');
-  const src = media?.getAttribute?.('src') || '';
-  const m = src.toLowerCase().match(/([a-z0-9-]+)\.(?:mp4|webm|png|jpe?g|svg)$/);
-  if (m) return m[1];
-
-  // Last resort: element id
-  return slide.id?.toLowerCase() || '';
+function extractKey(el) {
+  const id = el.dataset?.id || el.getAttribute?.('data-id');
+  if (id) return id.toLowerCase();
+  const m = el.querySelector?.('img,video,source,iframe')?.getAttribute?.('src')?.toLowerCase()
+     ?.match(/([a-z0-9-]+)\.(mp4|webm|png|jpe?g|svg)$/);
+  return m ? m[1] : (el.id?.toLowerCase() || '');
 }
 
 function enforceOrder(track) {
-  const children = Array.from(track.children);
-  if (!children.length) return;
-
   const rank = new Map(ORDER.map((k, i) => [k, i]));
-  const withKeys = children.map(el => ({ el, key: extractKey(el) }));
-
-  withKeys.sort((a, b) => {
-    const ra = rank.has(a.key) ? rank.get(a.key) : 999;
-    const rb = rank.has(b.key) ? rank.get(b.key) : 999;
-    return ra - rb;
-  });
-
-  // Re-append in new order
-  withKeys.forEach(({ el }) => track.appendChild(el));
-  console.log('[carousel] order enforced');
+  const kids = Array.from(track.children).map(el => ({ el, key: extractKey(el) }));
+  kids.sort((a, b) => (rank.get(a.key) ?? 999) - (rank.get(b.key) ?? 999));
+  kids.forEach(({ el }) => track.appendChild(el));
+  console.log('[carousel] order enforced:', kids.map(k => k.key));
 }
 
-function attachWheelToHorizontal(track) {
-  // If user is deliberately horizontal scrolling already, let deltaX through.
-  // Otherwise convert vertical deltaY → horizontal scrollLeft.
-  let pending = 0;
-  let ticking = false;
+function attachWheelWithAcceleration(track) {
+  let velocity = 0;
+  let rafId = null;
 
-  function flush() {
-    track.scrollLeft += pending;
-    pending = 0;
-    ticking = false;
+  function applyScroll() {
+    if (Math.abs(velocity) < 0.1) {
+      velocity = 0;
+      rafId = null;
+      return;
+    }
+    track.scrollLeft += velocity;
+    velocity *= 0.85; // deceleration factor
+    rafId = requestAnimationFrame(applyScroll);
   }
 
   track.addEventListener('wheel', (e) => {
-    // Do not hijack with Ctrl/Meta (browser zoom) or if horizontal intent already > vertical
-    if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    // Allow native horizontal scroll or browser zoom (Ctrl/Cmd on most browsers)
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 
-    // convert vertical to horizontal
-    pending += e.deltaY;
-    e.preventDefault(); // IMPORTANT: requires {passive:false}
+    let delta = e.deltaY;
 
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(flush);
+    // Modifiers (check ctrlKey first - browser zoom)
+    if (e.ctrlKey || e.metaKey) {
+      // User might be zooming - let browser handle it
+      return;
+    }
+    if (e.shiftKey) {
+      delta *= 0.4; // Slower/precise scrolling
+    }
+    // For faster scrolling, user can use Shift+Wheel or we could add Alt modifier
+    // Let's add Alt for 2.5x speed
+    if (e.altKey) {
+      delta *= 2.5; // Faster scrolling
+    }
+
+    velocity += delta * 0.6; // acceleration factor
+    velocity = Math.max(-50, Math.min(50, velocity)); // clamp velocity
+
+    e.preventDefault();
+
+    if (!rafId) {
+      rafId = requestAnimationFrame(applyScroll);
     }
   }, { passive: false });
 
-  // Keyboard fallback (← →)
+  console.log('[carousel] smooth wheel acceleration ready (Shift=slow, Alt=fast)');
+}
+
+function attachKeyboard(track) {
   track.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') { track.scrollBy({ left: 420, behavior: 'smooth' }); }
-    if (e.key === 'ArrowLeft')  { track.scrollBy({ left: -420, behavior: 'smooth' }); }
+    if (e.key === 'ArrowRight') {
+      track.scrollBy({ left: 420, behavior: 'smooth' });
+      e.preventDefault();
+    }
+    if (e.key === 'ArrowLeft') {
+      track.scrollBy({ left: -420, behavior: 'smooth' });
+      e.preventDefault();
+    }
+  });
+  console.log('[carousel] keyboard arrows ready');
+}
+
+function attachHeaderHover() {
+  const header = q('#site-header');
+  if (!header) return;
+
+  let idleTimer = null;
+
+  function showHeader() {
+    header.classList.add('show-on-hover');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      header.classList.remove('show-on-hover');
+    }, 2000); // hide after 2s of inactivity
+  }
+
+  // Show header when mouse moves near top 15% of viewport
+  document.addEventListener('mousemove', (e) => {
+    if (e.clientY < window.innerHeight * 0.15) {
+      showHeader();
+    }
   });
 
-  console.log('[carousel] wheel-to-horizontal ready');
+  // Also show on direct header hover
+  header.addEventListener('mouseenter', showHeader);
+
+  console.log('[carousel] header fade/show-on-hover ready');
 }
 
 function init() {
@@ -110,17 +142,19 @@ function init() {
     return;
   }
 
-  // mark for styling hooks
-  track.classList.add('ww-scroll-ready');
+  // Mark body for CSS styling
   document.body.classList.add('in-carousel');
+  track.classList.add('ww-scroll-ready');
+  track.setAttribute('tabindex', '0'); // make focusable for keyboard
 
   enforceOrder(track);
-  attachWheelToHorizontal(track);
+  attachWheelWithAcceleration(track);
+  attachKeyboard(track);
+  attachHeaderHover(track);
 
-  console.log('[carousel] minimal ready (bound to .wonderworks-scroller)');
+  console.log('[carousel] initialized:', track);
 }
 
-// Run after DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init, { once: true });
 } else {
