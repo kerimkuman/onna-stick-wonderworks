@@ -34,31 +34,31 @@ function extractKey(el) {
   const id = el.dataset?.id || el.getAttribute?.('data-id');
   if (id) return id.toLowerCase();
 
-  // Extract from media src attribute
-  const media = el.querySelector?.('img,video,source,iframe');
-  const src = media?.getAttribute?.('src') || '';
+  // Extract from media src attribute OR iframe src
+  const img = el.querySelector('img');
+  const video = el.querySelector('video source');
+  const iframe = el.querySelector('iframe');
 
-  // Match the full filename pattern from ORDER array
-  const patterns = [
-    /be-seen-on-every-screen/,
-    /build-your-legacy/,
-    /onna-stick-construction/,
-    /barbers-logo/,
-    /bad-mother-earth-vinyl/,
-    /bad-mother-earth.*youtube/,
-    /fresh-web-design/,
-    /bar-fruit-supplies/,
-    /super-sweet/
-  ];
+  let src = '';
+  if (img) src = img.getAttribute('src') || '';
+  else if (video) src = video.getAttribute('src') || '';
+  else if (iframe) src = iframe.getAttribute('src') || '';
 
   const lowerSrc = src.toLowerCase();
-  for (let i = 0; i < patterns.length; i++) {
-    if (patterns[i].test(lowerSrc)) {
-      return ORDER[i];
-    }
-  }
 
-  return el.id?.toLowerCase() || '';
+  // Direct pattern matching with debug logging
+  if (/be-seen-on-every-screen/.test(lowerSrc)) return 'be-seen-on-every-screen';
+  if (/build-your-legacy/.test(lowerSrc)) return 'build-your-legacy';
+  if (/onna-stick-construction/.test(lowerSrc)) return 'onna-stick-construction';
+  if (/barbers/.test(lowerSrc)) return 'barbers-logo';
+  if (/bad-mother-earth-vinyl|bad-mother-earth-vinyl-spread/.test(lowerSrc)) return 'bad-mother-earth-vinyl-cover';
+  if (/youtube\.com/.test(lowerSrc)) return 'bad-mother-earth-youtube';
+  if (/fresh/.test(lowerSrc)) return 'fresh';
+  if (/bar-fruit-supplies/.test(lowerSrc)) return 'bar-fruit-supplies-hero';
+  if (/super-sweet/.test(lowerSrc)) return 'super-sweet';
+
+  console.warn('[carousel] No key match for:', lowerSrc);
+  return '';
 }
 
 function enforceOrder(track) {
@@ -170,8 +170,9 @@ export function initCarousel() {
   track.classList.add('ww-scroll-ready');
   track.setAttribute('tabindex', '0'); // make focusable for keyboard
 
-  // CRITICAL: Disable CSS smooth scroll to prevent twitching with RAF
+  // CRITICAL: Disable CSS behaviors that fight RAF wheel scrolling
   track.style.scrollBehavior = 'auto';
+  track.style.scrollSnapType = 'none'; // disable snap during wheel scroll
 
   enforceOrder(track);
   attachWheelWithAcceleration(track);
