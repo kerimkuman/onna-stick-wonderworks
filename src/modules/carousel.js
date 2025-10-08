@@ -135,7 +135,7 @@ function attachHeaderHover() {
   console.log('[carousel] header fade/show-on-hover ready');
 }
 
-function init() {
+export function initCarousel() {
   const track = getTrack();
   if (!track) {
     console.warn('[carousel] no track found');
@@ -153,10 +153,4 @@ function init() {
   attachHeaderHover(track);
 
   console.log('[carousel] initialized:', track);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
-} else {
-  init();
 }
