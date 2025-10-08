@@ -33,9 +33,32 @@ function getTrack() {
 function extractKey(el) {
   const id = el.dataset?.id || el.getAttribute?.('data-id');
   if (id) return id.toLowerCase();
-  const m = el.querySelector?.('img,video,source,iframe')?.getAttribute?.('src')?.toLowerCase()
-     ?.match(/([a-z0-9-]+)\.(mp4|webm|png|jpe?g|svg)$/);
-  return m ? m[1] : (el.id?.toLowerCase() || '');
+
+  // Extract from media src attribute
+  const media = el.querySelector?.('img,video,source,iframe');
+  const src = media?.getAttribute?.('src') || '';
+
+  // Match the full filename pattern from ORDER array
+  const patterns = [
+    /be-seen-on-every-screen/,
+    /build-your-legacy/,
+    /onna-stick-construction/,
+    /barbers-logo/,
+    /bad-mother-earth-vinyl/,
+    /bad-mother-earth.*youtube/,
+    /fresh-web-design/,
+    /bar-fruit-supplies/,
+    /super-sweet/
+  ];
+
+  const lowerSrc = src.toLowerCase();
+  for (let i = 0; i < patterns.length; i++) {
+    if (patterns[i].test(lowerSrc)) {
+      return ORDER[i];
+    }
+  }
+
+  return el.id?.toLowerCase() || '';
 }
 
 function enforceOrder(track) {
@@ -146,6 +169,9 @@ export function initCarousel() {
   document.body.classList.add('in-carousel');
   track.classList.add('ww-scroll-ready');
   track.setAttribute('tabindex', '0'); // make focusable for keyboard
+
+  // CRITICAL: Disable CSS smooth scroll to prevent twitching with RAF
+  track.style.scrollBehavior = 'auto';
 
   enforceOrder(track);
   attachWheelWithAcceleration(track);
