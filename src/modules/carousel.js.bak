@@ -127,3 +127,83 @@ export function initCarousel(){
 
   console.log("[carousel] minimal ready (bound to .wonderworks-scroller)");
 }
+/* Wonderworks patch: wheel+order */
+(() => {
+  try {
+    const selTrack = ['[data-carousel-track]', '.carousel-track', '.carousel__track', '.slides', '.track', '#carousel-track'];
+    const track = selTrack.map(s => document.querySelector(s)).find(Boolean);
+    if (!track) { console.info('[carousel] patch: no track found'); return; }
+
+    // Find the element that actually scrolls horizontally (track or its nearest overflow-x container)
+    function isScroller(el) {
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      const canScroll = (el.scrollWidth - el.clientWidth) > 4;
+      return canScroll && (/(auto|scroll)/.test(cs.overflowX));
+    }
+    let scroller = [track, track.parentElement, track.closest('[data-carousel], .carousel, .carousel__viewport')].find(isScroller) || track;
+
+    // --- Enforce your desired order (fuzzy match on captions/alt/src) ---
+    const desired = [
+      "be seen on every screen",
+      "build your legacy",
+      "onna stick construction",
+      "barbers logo",
+      "bad mother earth vinyl cover",
+      "bad mother earth youtube video",
+      "fresh",
+      "bar fruit supplies website hero",
+      "super sweet"
+    ].map(s => s.toLowerCase());
+
+    const slides = Array.from(track.children);
+
+    const indexOfKey = (el) => {
+      const textBits = [
+        el.getAttribute('data-title'),
+        el.getAttribute('aria-label'),
+        el.querySelector('figcaption,h1,h2,h3,h4,.caption,.title')?.textContent,
+        el.querySelector('img')?.getAttribute('alt'),
+        el.textContent
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      for (let i = 0; i < desired.length; i++) {
+        if (textBits.includes(desired[i])) return i;
+      }
+      const src = (el.querySelector('img,video,source')?.getAttribute('src') || '').toLowerCase();
+      for (let i = 0; i < desired.length; i++) {
+        const k = desired[i];
+        const kBare = k.replace(/\s+/g, '');
+        const kDash = k.replace(/\s+/g, '-');
+        if (src.includes(k) || src.includes(kBare) || src.includes(kDash)) return i;
+      }
+      return desired.length + slides.indexOf(el); // stable fallback
+    };
+
+    slides
+      .sort((a, b) => indexOfKey(a) - indexOfKey(b))
+      .forEach(el => track.appendChild(el));
+
+    console.log('[carousel] order enforced (patch)');
+
+    // --- Horizontal wheel scrolling with momentum-like feel ---
+    const wheelHandler = (e) => {
+      // Only hijack when there's horizontal space to scroll
+      const needX = scroller.scrollWidth > scroller.clientWidth;
+      if (!needX) return;
+
+      // Convert vertical wheel to horizontal (natural)
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(dx) < 1) return;
+
+      e.preventDefault(); // we’re scrolling horizontally instead of vertical page
+      scroller.scrollLeft += dx; // simple, snappy, native momentum on most browsers
+    };
+
+    scroller.addEventListener('wheel', wheelHandler, { passive: false });
+
+    console.log('[carousel] wheel-horizontal ready (patch)');
+  } catch (err) {
+    console.warn('[carousel] patch error', err);
+  }
+})();

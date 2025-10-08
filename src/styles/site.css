@@ -206,3 +206,39 @@ body.in-carousel #site-header.show-on-hover{ opacity:1; pointer-events:auto; }
   scroll-behavior: smooth;
   overscroll-behavior-inline: contain;
 }
+/* === wonderworks: horizontal scroll + snap (idempotent) === */
+.wonderworks-scroller,
+.ww-scroll-ready {
+  display: flex;
+  gap: clamp(16px, 3vw, 40px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x; /* allow horizontal wheel/touch */
+  padding-bottom: 8px;
+}
+.wonderworks-scroller > *, 
+.ww-scroll-ready > * {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+}
+
+/* subtle, low-profile scrollbar on desktop */
+.wonderworks-scroller::-webkit-scrollbar,
+.ww-scroll-ready::-webkit-scrollbar { height: 8px; }
+.wonderworks-scroller::-webkit-scrollbar-thumb,
+.ww-scroll-ready::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 8px; }
+
+/* header fade while in carousel */
+body.in-carousel #site-header {
+  transition: opacity .6s cubic-bezier(0.4,0,0.2,1);
+  opacity: .0;
+  pointer-events: none;
+}
+body.in-carousel #site-header:hover,
+body.in-carousel #site-header.show-on-hover {
+  opacity: 1;
+  pointer-events: auto;
+}
