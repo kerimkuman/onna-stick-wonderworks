@@ -70,51 +70,41 @@ function enforceOrder(track) {
 }
 
 function attachWheelWithAcceleration(track) {
-  let velocity = 0;
-  let rafId = null;
-
-  function applyScroll() {
-    if (Math.abs(velocity) < 0.1) {
-      velocity = 0;
-      rafId = null;
-      return;
-    }
-    track.scrollLeft += velocity;
-    velocity *= 0.85; // deceleration factor
-    rafId = requestAnimationFrame(applyScroll);
-  }
+  let accumulated = 0;
 
   track.addEventListener('wheel', (e) => {
-    // Allow native horizontal scroll or browser zoom (Ctrl/Cmd on most browsers)
+    // Allow native horizontal scroll or browser zoom
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if (e.ctrlKey || e.metaKey) return;
 
     let delta = e.deltaY;
 
-    // Modifiers (check ctrlKey first - browser zoom)
-    if (e.ctrlKey || e.metaKey) {
-      // User might be zooming - let browser handle it
-      return;
-    }
-    if (e.shiftKey) {
-      delta *= 0.4; // Slower/precise scrolling
-    }
-    // For faster scrolling, user can use Shift+Wheel or we could add Alt modifier
-    // Let's add Alt for 2.5x speed
-    if (e.altKey) {
-      delta *= 2.5; // Faster scrolling
-    }
+    // Modifiers
+    if (e.shiftKey) delta *= 0.4;  // Slower/precise
+    if (e.altKey) delta *= 2.5;    // Faster
 
-    velocity += delta * 0.6; // acceleration factor
-    velocity = Math.max(-50, Math.min(50, velocity)); // clamp velocity
+    accumulated += delta;
+
+    // Snap threshold: once we accumulate enough delta, snap to next/prev slide
+    const threshold = 100;
+
+    if (Math.abs(accumulated) >= threshold) {
+      const direction = accumulated > 0 ? 1 : -1;
+      const slideWidth = track.offsetWidth;
+
+      // Smooth scroll to next/prev slide with CSS snap handling the magnetism
+      track.scrollBy({
+        left: slideWidth * direction,
+        behavior: 'smooth'
+      });
+
+      accumulated = 0; // reset after snap
+    }
 
     e.preventDefault();
-
-    if (!rafId) {
-      rafId = requestAnimationFrame(applyScroll);
-    }
   }, { passive: false });
 
-  console.log('[carousel] smooth wheel acceleration ready (Shift=slow, Alt=fast)');
+  console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
 }
 
 function attachKeyboard(track) {
@@ -170,9 +160,8 @@ export function initCarousel() {
   track.classList.add('ww-scroll-ready');
   track.setAttribute('tabindex', '0'); // make focusable for keyboard
 
-  // CRITICAL: Disable CSS behaviors that fight RAF wheel scrolling
-  track.style.scrollBehavior = 'auto';
-  track.style.scrollSnapType = 'none'; // disable snap during wheel scroll
+  // Enable snap-to-center for buttery magnetic feel
+  track.style.scrollSnapType = 'x mandatory';
 
   enforceOrder(track);
   attachWheelWithAcceleration(track);
