@@ -201,3 +201,8 @@ body.in-carousel #site-header.show-on-hover{ opacity:1; pointer-events:auto; }
   -webkit-overflow-scrolling:touch;
 }
 #wonderworks-wrapper .wonderworks-slide{ scroll-snap-align:start; }
+/* Wonderworks patch: carousel scroll helpers */
+[data-carousel-track], .carousel-track, .carousel__track, .slides, .track {
+  scroll-behavior: smooth;
+  overscroll-behavior-inline: contain;
+}
