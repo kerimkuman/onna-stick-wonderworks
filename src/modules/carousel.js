@@ -163,6 +163,14 @@ export function initCarousel() {
   // Enable snap-to-center for buttery magnetic feel
   track.style.scrollSnapType = 'x mandatory';
 
+  // Prevent iframes (YouTube) from capturing wheel events
+  track.querySelectorAll('iframe, .video-embed-container').forEach(el => {
+    el.addEventListener('wheel', (e) => {
+      e.stopPropagation(); // don't let it bubble to window/document
+      e.preventDefault();  // don't scroll iframe content
+    }, { passive: false });
+  });
+
   enforceOrder(track);
   attachWheelWithAcceleration(track);
   attachKeyboard(track);
