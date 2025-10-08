@@ -77,7 +77,20 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* Video embed */
 .video-embed-container { position: relative; width: 90%; max-width: 1280px; padding-top: 50.625%; }
 .video-embed-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-.video-embed-container:hover iframe { pointer-events: auto; }
+
+/* Overlay to completely block iframe scroll capture during carousel navigation */
+.video-embed-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Remove overlay on click to allow video interaction */
+.video-embed-container.active::after { display: none; }
+.video-embed-container.active iframe { pointer-events: auto; }
 
 /* ===== Terminal (unchanged styles) ===== */
 :root { --green:#00fd55; --phosphor:#39ff14; }
