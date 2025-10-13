@@ -49,9 +49,19 @@ export class AudioControls {
     controls.innerHTML = `
       <div class="audio-controls-inner">
         <div class="audio-player-section">
+          <button id="audio-prev" class="audio-btn-nav" aria-label="Previous" title="Previous Track">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+            </svg>
+          </button>
           <button id="audio-play-pause" class="audio-btn-main" aria-label="Play/Pause" title="Play/Pause (Space)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </button>
+          <button id="audio-next" class="audio-btn-nav" aria-label="Next" title="Next Track (N)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 18h2V6h-2zm-2-6L5.5 6v12z"/>
             </svg>
           </button>
           <div class="track-info-section">
@@ -63,13 +73,11 @@ export class AudioControls {
           <div class="audio-volume-section">
             <div class="volume-control">
               <span class="volume-label">BGM</span>
-              <input type="range" id="bgm-volume" min="0" max="100" value="25" />
-              <span class="volume-value">25%</span>
+              <input type="range" id="bgm-volume" min="0" max="100" value="25" step="1" />
             </div>
             <div class="volume-control">
               <span class="volume-label">Ambient</span>
-              <input type="range" id="ambient-volume" min="0" max="100" value="15" />
-              <span class="volume-value">15%</span>
+              <input type="range" id="ambient-volume" min="0" max="100" value="15" step="1" />
             </div>
           </div>
         </div>
@@ -101,39 +109,64 @@ export class AudioControls {
       });
     }
 
-    // BGM volume slider
-    const bgmVolume = document.getElementById('bgm-volume');
-    const bgmVolumeValue = document.querySelector('.volume-control:nth-of-type(1) .volume-value');
-    if (bgmVolume) {
-      const initialVol = Math.round(AudioBus.getVolume('music') * 100);
-      bgmVolume.value = initialVol;
-      if (bgmVolumeValue) bgmVolumeValue.textContent = `${initialVol}%`;
-
-      bgmVolume.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value) / 100;
-        AudioBus.setVolume('music', value);
-        MusicPlayer.updateVolume(); // Update current audio element
-        if (bgmVolumeValue) bgmVolumeValue.textContent = `${e.target.value}%`;
+    // Previous
+    const prev = document.getElementById('audio-prev');
+    if (prev) {
+      prev.addEventListener('click', async () => {
+        await MusicPlayer.prev();
       });
     }
 
-    // Ambient volume slider (stored separately)
+    // Next
+    const next = document.getElementById('audio-next');
+    if (next) {
+      next.addEventListener('click', async () => {
+        await MusicPlayer.next();
+      });
+    }
+
+    // BGM volume slider
+    const bgmVolume = document.getElementById('bgm-volume');
+    if (bgmVolume) {
+      // Get initial volume from AudioBus
+      const initialVol = Math.round(AudioBus.getVolume('music') * 100);
+      bgmVolume.value = initialVol;
+
+      bgmVolume.addEventListener('input', (e) => {
+        const sliderValue = parseInt(e.target.value);
+        const audioVolume = sliderValue / 100;
+
+        // Set volume in AudioBus
+        AudioBus.setVolume('music', audioVolume);
+
+        // Update the actual playing audio element
+        MusicPlayer.updateVolume();
+
+        console.log('[AudioControls] BGM volume:', sliderValue + '%', '(actual:', audioVolume.toFixed(2) + ')');
+      });
+    }
+
+    // Ambient volume slider
     const ambientVolume = document.getElementById('ambient-volume');
-    const ambientVolumeValue = document.querySelector('.volume-control:nth-of-type(2) .volume-value');
     if (ambientVolume) {
-      const initialVol = parseInt(localStorage.getItem('audio.v1.ambient.volume') || '15');
+      const storedVol = localStorage.getItem('audio.v1.ambient.volume');
+      const initialVol = storedVol ? parseInt(storedVol) : 15;
       ambientVolume.value = initialVol;
-      if (ambientVolumeValue) ambientVolumeValue.textContent = `${initialVol}%`;
 
       ambientVolume.addEventListener('input', (e) => {
-        const value = e.target.value;
-        localStorage.setItem('audio.v1.ambient.volume', value);
-        if (ambientVolumeValue) ambientVolumeValue.textContent = `${value}%`;
+        const sliderValue = parseInt(e.target.value);
+        const audioVolume = sliderValue / 100;
+
+        // Store in localStorage
+        localStorage.setItem('audio.v1.ambient.volume', sliderValue);
+
         // Update any playing ambient audio
         const ambientAudio = document.querySelector('audio[data-type="ambient"]');
         if (ambientAudio) {
-          ambientAudio.volume = parseInt(value) / 100;
+          ambientAudio.volume = audioVolume;
         }
+
+        console.log('[AudioControls] Ambient volume:', sliderValue + '%', '(actual:', audioVolume.toFixed(2) + ')');
       });
     }
   }
@@ -156,6 +189,11 @@ export class AudioControls {
           }
           break;
 
+        case 'n': // N - Next track
+          e.preventDefault();
+          await MusicPlayer.next();
+          break;
+
         case 'm': // M - Toggle music mute
           e.preventDefault();
           const currentlyMuted = AudioBus.isMuted('music');
@@ -175,9 +213,7 @@ export class AudioControls {
           AudioBus.setVolume('music', newDown);
           MusicPlayer.updateVolume();
           const bgmVolDown = document.getElementById('bgm-volume');
-          const bgmValDown = document.querySelector('.volume-control:nth-of-type(1) .volume-value');
           if (bgmVolDown) bgmVolDown.value = Math.round(newDown * 100);
-          if (bgmValDown) bgmValDown.textContent = `${Math.round(newDown * 100)}%`;
           break;
 
         case ']': // ] - BGM Volume up
@@ -187,14 +223,12 @@ export class AudioControls {
           AudioBus.setVolume('music', newUp);
           MusicPlayer.updateVolume();
           const bgmVolUp = document.getElementById('bgm-volume');
-          const bgmValUp = document.querySelector('.volume-control:nth-of-type(1) .volume-value');
           if (bgmVolUp) bgmVolUp.value = Math.round(newUp * 100);
-          if (bgmValUp) bgmValUp.textContent = `${Math.round(newUp * 100)}%`;
           break;
       }
     });
 
-    console.log('[AudioControls] keyboard shortcuts: Space (play/pause), M (mute), [ ] (volume)');
+    console.log('[AudioControls] keyboard: Space (play/pause), N (next), M (mute), [ ] (volume)');
   }
 
   /**
