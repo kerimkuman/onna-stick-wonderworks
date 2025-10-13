@@ -6,10 +6,7 @@
  * - Keyboard arrow navigation
  * - Edge handoff to page scroll
  * - Header fade/show on hover
- * - Ambient sound on entry
  */
-
-import { playAmbient, stopAmbient } from './audio.js';
 
 const ORDER = [
   'be-seen-on-every-screen',
@@ -160,34 +157,12 @@ export function initCarousel() {
   // Setup video autoplay on slide visibility
   setupVideoAutoplay(scroller);
 
-  // Setup ambient sound for wonderworks section
-  setupWonderworksAmbient();
-
   // Console logs for verification
   console.log('[carousel] order enforced:', ORDER);
   console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
   console.log('[carousel] keyboard arrows ready');
   console.log('[carousel] header fade/show-on-hover ready');
-  console.log('[carousel] ambient sound ready');
   console.log('[carousel] initialized:', scroller);
-}
-
-function setupWonderworksAmbient() {
-  const wonderworksWrapper = document.getElementById('wonderworks-wrapper');
-  if (!wonderworksWrapper) return;
-
-  const observer = new IntersectionObserver((entries) => {
-    const visible = entries[0].isIntersecting;
-    if (visible) {
-      playAmbient('wonderworks');
-      console.log('[carousel] ambient sound playing');
-    } else {
-      stopAmbient();
-      console.log('[carousel] ambient sound stopped');
-    }
-  }, { threshold: 0.3 });
-
-  observer.observe(wonderworksWrapper);
 }
 
 function setupVideoAutoplay(scroller) {

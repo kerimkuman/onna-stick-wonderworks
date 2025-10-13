@@ -12,7 +12,12 @@ import { initPageSetup } from './modules/page-setup.js';
 import { initCarousel } from './modules/carousel.js';
 import { initNav } from './modules/nav.js';
 import { initTerminal } from './modules/terminal.js';
-import { initAudio } from './modules/audio.js';
+
+// Import new audio system
+import { AudioBus } from './modules/audio-bus.js';
+import { MusicPlayer } from './modules/music-player.js';
+import { SFX } from './modules/sfx.js';
+import { audioControls } from './modules/audio-controls.js';
 
 // Initialize app when DOM is ready
 if (document.readyState === 'loading') {
@@ -21,7 +26,7 @@ if (document.readyState === 'loading') {
   init();
 }
 
-function init() {
+async function init() {
   try {
     initPageSetup();
   } catch (error) {
@@ -41,14 +46,29 @@ function init() {
   }
 
   try {
-    initAudio();
-  } catch (error) {
-    console.error('× Audio failed:', error);
-  }
-
-  try {
     initTerminal();
   } catch (error) {
     console.error('× Terminal failed:', error);
+  }
+
+  // Initialize new audio system
+  try {
+    // Load playlist
+    const playlist = [
+      { src: '/assets/bgm-1.mp3', title: 'BGM Track 1' },
+      { src: '/assets/bgm-2.mp3', title: 'BGM Track 2' },
+      { src: '/assets/bgm-3.mp3', title: 'BGM Track 3' }
+    ];
+    MusicPlayer.load(playlist);
+
+    // Preload SFX
+    await SFX.preloadTerminalSounds();
+
+    // Initialize UI controls
+    audioControls.init();
+
+    console.log('[main] audio system initialized');
+  } catch (error) {
+    console.error('× Audio system failed:', error);
   }
 }
