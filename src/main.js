@@ -12,6 +12,7 @@ import { initPageSetup } from './modules/page-setup.js';
 import { initCarousel } from './modules/carousel.js';
 import { initNav } from './modules/nav.js';
 import { initTerminal } from './modules/terminal.js';
+import { initAudio } from './modules/audio.js';
 
 // Initialize app when DOM is ready
 if (document.readyState === 'loading') {
@@ -37,6 +38,12 @@ function init() {
     initCarousel();
   } catch (error) {
     console.error('× Carousel failed:', error);
+  }
+
+  try {
+    initAudio();
+  } catch (error) {
+    console.error('× Audio failed:', error);
   }
 
   try {

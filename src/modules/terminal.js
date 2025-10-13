@@ -1,7 +1,8 @@
 /**
  * Minimal terminal: ASCII-only boot + FAQ with typewriter and keyboard control.
- * No external imports. No audio/game yet.
  */
+import { toggleMute, playAmbient, stopAmbient } from './audio.js';
+
 const FAQ = [
   { q: "What is Onna-Stick Wonderworks?", a: "A small, sharp studio that turns complicated brand magic into useful tools. Think: practical wizard." },
   { q: "What services do you offer?", a: "Brand identity & logo design; Naming & copy; Web & motion; Content & SEO; Social management." },
@@ -73,10 +74,19 @@ export function initTerminal(){
   const qList = document.getElementById("qList");
   const answerEl = document.getElementById("answer");
   const crt = document.querySelector(".crt");
+  const muteBtn = document.getElementById("muteBtn");
 
   if (!bootWrap || !bootlines || !panes || !qList || !answerEl || !crt) {
     console.log("[terminal] missing DOM pieces; skipping");
     return;
+  }
+
+  // Mute button functionality
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      const muted = toggleMute();
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+    });
   }
 
   // Boot banner
@@ -116,12 +126,15 @@ export function initTerminal(){
   }
   window.addEventListener("keydown", onKey);
 
-  // When FAQ section leaves viewport, stop typing timer so it does not leak
+  // When FAQ section enters/leaves viewport, play/stop ambient audio
   const io = new IntersectionObserver((entries) => {
     const visible = entries[0].isIntersecting;
     if (!visible) {
       clearInterval(typingTimer);
       typingTimer = null;
+      stopAmbient();
+    } else {
+      playAmbient('terminal');
     }
   }, { threshold: 0.3 });
   io.observe(faqSection);
