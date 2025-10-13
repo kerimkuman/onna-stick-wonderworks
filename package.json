@@ -1,19 +1,25 @@
-{
-    "name":  "onna-stick-wonderworks-vite-site",
-    "version":  "1.0.0",
-    "description":  "",
-    "main":  "index.js",
-    "scripts":  {
-                    "preview":  "vite preview",
-                    "build":  "vite build",
-                    "dev":  "vite"
-                },
-    "keywords":  [
-
-                 ],
-    "author":  "",
-    "license":  "ISC",
-    "devDependencies":  {
-                            "vite":  "^7.1.9"
-                        }
+﻿{
+  "name": "onna-stick-wonderworks-vite-site",
+  "version": "1.0.0",
+  "description": "Onna-Stick Wonderworks - Single-page portfolio with interactive terminal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "portfolio",
+    "vite",
+    "brand-design",
+    "web-design"
+  ],
+  "author": "Onna-Stick Wonderworks",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

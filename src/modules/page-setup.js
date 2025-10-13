@@ -1,43 +1,90 @@
+﻿/**
+ * PAGE SETUP MODULE
+ * Handles home/site view transitions and footer updates
+ */
+
 export function initPageSetup() {
-    // --- PAGE SETUP & NAVIGATION LOGIC ---
-    const year = new Date().getFullYear();
-    document.querySelectorAll('.current-year').forEach(el => el.textContent = year);
-    
-    const homeContainer = document.getElementById('home-container');
-    const siteContainer = document.getElementById('site-container');
-    const enterSiteBtn = document.getElementById('enter-site-btn');
-    const backToHomeBtn = document.getElementById('back-to-home');
-    
-    const showSite = (targetId) => {
-        homeContainer.classList.add('hidden');
-        siteContainer.classList.add('active');
-        setTimeout(() => { 
-            const targetElement = document.getElementById(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'instant' });
-            }
-        }, 50);
-    };
+  const homeContainer = document.getElementById('home-container');
+  const siteContainer = document.getElementById('site-container');
+  const enterBtn = document.getElementById('enter-site-btn');
+  const backToHomeBtn = document.getElementById('back-to-home');
 
-    enterSiteBtn.addEventListener('click', () => showSite('welcome'));
+  // Set current year in footers
+  const yearSpans = document.querySelectorAll('.current-year');
+  const currentYear = new Date().getFullYear();
+  yearSpans.forEach(span => {
+    span.textContent = currentYear;
+  });
 
-    document.querySelectorAll('[data-goto]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const target = link.getAttribute('data-goto');
-            showSite(target);
-        });
+  // Handle enter site button
+  if (enterBtn) {
+    enterBtn.addEventListener('click', () => {
+      enterSite();
     });
+  }
 
+  // Handle footer navigation links in home-footer
+  const homeFooterLinks = document.querySelectorAll('#home-footer [data-goto]');
+  homeFooterLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.getAttribute('data-goto');
+      enterSite(targetId);
+    });
+  });
+
+  // Handle back to home
+  if (backToHomeBtn) {
     backToHomeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        siteContainer.classList.remove('active');
-        homeContainer.classList.remove('hidden');
-        setTimeout(() => { 
-            const homeDoor = document.getElementById('home-door');
-            if (homeDoor) {
-                homeDoor.scrollIntoView({ behavior: 'instant' });
-            }
-        }, 50);
+      e.preventDefault();
+      returnHome();
     });
+  }
+
+  // Handle smooth scroll for in-page links
+  const inPageLinks = document.querySelectorAll('a[href^="#"]');
+  inPageLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href === '#' || href === '#back-to-home') return;
+      
+      e.preventDefault();
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  function enterSite(targetSectionId = null) {
+    if (homeContainer && siteContainer) {
+      homeContainer.classList.add('hidden');
+      siteContainer.classList.add('visible');
+
+      // If a specific section was requested, scroll to it after transition
+      if (targetSectionId) {
+        setTimeout(() => {
+          const targetSection = document.getElementById(targetSectionId);
+          if (targetSection) {
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 600);
+      }
+    }
+  }
+
+  function returnHome() {
+    if (homeContainer && siteContainer) {
+      homeContainer.classList.remove('hidden');
+      siteContainer.classList.remove('visible');
+      
+      // Scroll main content back to top
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.scrollTop = 0;
+      }
+    }
+  }
 }

@@ -163,3 +163,14 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* Carousel styles consolidated: wheel scrolling is now JS-only (carousel.js) */
 /* Header fade behavior controlled by body.in-carousel + .show-on-hover (lines 13-14) */
 .wonderworks-scroller::-webkit-scrollbar { display: none; }
+/* carousel sanity */
+.wonderworks-scroller{
+  scroll-snap-type:x mandatory;
+  overflow-x:auto; overflow-y:hidden;
+  display:flex;
+}
+.wonderworks-slide{
+  scroll-snap-align:start;
+  flex:0 0 100%;
+}
+

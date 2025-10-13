@@ -1,14 +1,22 @@
-import { defineConfig } from "vite";
+﻿import { defineConfig } from 'vite';
+
 export default defineConfig({
+  server: {
+    port: 3000,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   plugins: [
     {
-      name: "headers",
+      name: 'add-clacks-header',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (/\.html($|\?)/.test(req.url || "")) {
-            res.setHeader("Content-Type", "text/html; charset=utf-8");
-          }
-          res.setHeader("X-Clacks-Overhead", "GNU Terry Pratchett");
+          res.setHeader('X-Clacks-Overhead', 'GNU Terry Pratchett');
           next();
         });
       },
