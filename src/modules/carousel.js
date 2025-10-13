@@ -1,11 +1,11 @@
-'use strict';
-
 /**
- * Wonderworks carousel
- * - Enforce custom order
- * - Smooth wheel acceleration with Ctrl/Shift modifiers
- * - Header fade/show-on-hover behavior
- * - Keyboard arrows
+ * WONDERWORKS CAROUSEL MODULE
+ * Horizontal snap-scrolling carousel with:
+ * - Slide order enforcement
+ * - Smooth wheel behavior with Shift/Alt modifiers
+ * - Keyboard arrow navigation
+ * - Edge handoff to page scroll
+ * - Header fade/show on hover
  */
 
 const ORDER = [
@@ -20,138 +20,10 @@ const ORDER = [
   'super-sweet'
 ];
 
-function q(sel) { return document.querySelector(sel); }
-
-function getTrack() {
-  return q('.wonderworks-scroller')
-      || q('[data-carousel-track]')
-      || q('.carousel-track')
-      || q('.carousel .track')
-      || null;
-}
-
-function extractKey(el) {
-  const id = el.dataset?.id || el.getAttribute?.('data-id');
-  if (id) return id.toLowerCase();
-
-  // Extract from media src attribute OR iframe src
-  const img = el.querySelector('img');
-  const video = el.querySelector('video source');
-  const iframe = el.querySelector('iframe');
-
-  let src = '';
-  if (img) src = img.getAttribute('src') || '';
-  else if (video) src = video.getAttribute('src') || '';
-  else if (iframe) src = iframe.getAttribute('src') || '';
-
-  const lowerSrc = src.toLowerCase();
-
-  // Direct pattern matching with debug logging
-  if (/be-seen-on-every-screen/.test(lowerSrc)) return 'be-seen-on-every-screen';
-  if (/build-your-legacy/.test(lowerSrc)) return 'build-your-legacy';
-  if (/onna-stick-construction/.test(lowerSrc)) return 'onna-stick-construction';
-  if (/barbers/.test(lowerSrc)) return 'barbers-logo';
-  if (/bad-mother-earth-vinyl|bad-mother-earth-vinyl-spread/.test(lowerSrc)) return 'bad-mother-earth-vinyl-cover';
-  if (/youtube\.com/.test(lowerSrc)) return 'bad-mother-earth-youtube';
-  if (/fresh/.test(lowerSrc)) return 'fresh';
-  if (/bar-fruit-supplies/.test(lowerSrc)) return 'bar-fruit-supplies-hero';
-  if (/super-sweet/.test(lowerSrc)) return 'super-sweet';
-
-  console.warn('[carousel] No key match for:', lowerSrc);
-  return '';
-}
-
-function enforceOrder(track) {
-  const rank = new Map(ORDER.map((k, i) => [k, i]));
-  const kids = Array.from(track.children).map(el => ({ el, key: extractKey(el) }));
-  kids.sort((a, b) => (rank.get(a.key) ?? 999) - (rank.get(b.key) ?? 999));
-  kids.forEach(({ el }) => track.appendChild(el));
-  console.log('[carousel] order enforced:', kids.map(k => k.key));
-}
-
-function attachWheelWithAcceleration(track) {
-  let accumulated = 0;
-
-  track.addEventListener('wheel', (e) => {
-    // Allow native horizontal scroll or browser zoom
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    if (e.ctrlKey || e.metaKey) return;
-
-    let delta = e.deltaY;
-
-    // Modifiers
-    if (e.shiftKey) delta *= 0.4;  // Slower/precise
-    if (e.altKey) delta *= 2.5;    // Faster
-
-    accumulated += delta;
-
-    // Snap threshold: once we accumulate enough delta, snap to next/prev slide
-    const threshold = 100;
-
-    if (Math.abs(accumulated) >= threshold) {
-      const direction = accumulated > 0 ? 1 : -1;
-      const slideWidth = track.offsetWidth;
-
-      // Smooth scroll to next/prev slide with CSS snap handling the magnetism
-      track.scrollBy({
-        left: slideWidth * direction,
-        behavior: 'smooth'
-      });
-
-      accumulated = 0; // reset after snap
-    }
-
-    e.preventDefault();
-  }, { passive: false });
-
-  console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
-}
-
-function attachKeyboard(track) {
-  track.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') {
-      track.scrollBy({ left: 420, behavior: 'smooth' });
-      e.preventDefault();
-    }
-    if (e.key === 'ArrowLeft') {
-      track.scrollBy({ left: -420, behavior: 'smooth' });
-      e.preventDefault();
-    }
-  });
-  console.log('[carousel] keyboard arrows ready');
-}
-
-function attachHeaderHover() {
-  const header = q('#site-header');
-  if (!header) return;
-
-  let idleTimer = null;
-
-  function showHeader() {
-    header.classList.add('show-on-hover');
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      header.classList.remove('show-on-hover');
-    }, 2000); // hide after 2s of inactivity
-  }
-
-  // Show header when mouse moves near top 15% of viewport
-  document.addEventListener('mousemove', (e) => {
-    if (e.clientY < window.innerHeight * 0.15) {
-      showHeader();
-    }
-  });
-
-  // Also show on direct header hover
-  header.addEventListener('mouseenter', showHeader);
-
-  console.log('[carousel] header fade/show-on-hover ready');
-}
-
 export function initCarousel() {
   const scroller = document.querySelector('.wonderworks-scroller');
   if (!scroller) {
-    console.warn('[carousel] no track found');
+    console.warn('[carousel] no .wonderworks-scroller found');
     return;
   }
 
@@ -161,7 +33,7 @@ export function initCarousel() {
   const slowMul = 0.45;         // Shift = precise
   const fastMul = 2.5;          // Alt = fast
   const snapDelay = 140;        // ms after last movement to snap
-  const minSnapDelta = 0.5;     // don’t snap if we barely moved
+  const minSnapDelta = 0.5;     // don't snap if we barely moved
 
   let vx = 0;                   // horizontal velocity
   let raf = 0;
@@ -171,7 +43,7 @@ export function initCarousel() {
   const atLeft  = () => scroller.scrollLeft <= 1;
   const atRight = () => Math.ceil(scroller.scrollLeft + scroller.clientWidth) >= scroller.scrollWidth - 1;
 
-  // Helper: one full “slide” width equals the viewport width
+  // Helper: one full "slide" width equals the viewport width
   const slideW = () => scroller.clientWidth;
 
   // Momentum loop
@@ -217,9 +89,10 @@ export function initCarousel() {
     if (e.shiftKey) mul *= slowMul;
     if (e.altKey)   mul *= fastMul;
 
+    // Edge handoff: let page scroll continue if at edge
     if ((intent > 0 && atRight()) || (intent < 0 && atLeft())) {
-      vx = 0; // kill momentum so we don’t pull back
-      return; // let page handle
+      vx = 0; // kill momentum so we don't pull back
+      return; // let page handle (no preventDefault)
     }
 
     // We own the wheel within bounds
@@ -232,28 +105,29 @@ export function initCarousel() {
     kick();
   }
 
-  // Keyboard support
+  // Keyboard support (~80% viewport width)
   function onKey(e) {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     const dir = e.key === 'ArrowRight' ? 1 : -1;
 
+    // Edge handoff for keyboard too
     if ((dir > 0 && atRight()) || (dir < 0 && atLeft())) return;
 
     e.preventDefault();
     const w = slideW();
-    const target = Math.round(scroller.scrollLeft / w) + dir;
-    scroller.scrollTo({ left: target * w, behavior: 'smooth' });
+    const jumpDist = w * 0.8; // ~80% viewport width
+    scroller.scrollBy({ left: jumpDist * dir, behavior: 'smooth' });
     lastWheel = performance.now();
   }
 
-  // focusable so it reliably receives wheel/keys
+  // Make focusable so it reliably receives wheel/keys
   scroller.tabIndex = 0;
 
-  // listeners
+  // Attach listeners
   scroller.addEventListener('wheel', onWheel, { passive: false });
   scroller.addEventListener('keydown', onKey);
 
-  // optional: snap after manual (touch/drag) scroll settles
+  // Optional: snap after manual (touch/drag) scroll settles
   let snapTimer;
   scroller.addEventListener('scroll', () => {
     if (vx !== 0) return; // momentum in progress
@@ -261,28 +135,70 @@ export function initCarousel() {
     snapTimer = setTimeout(() => maybeSnap(true), 140);
   }, { passive: true });
 
-  console.log('[carousel] edge pass-through + magnetic snap ready');
-}
-
   // Mark body for CSS styling
   document.body.classList.add('in-carousel');
-  track.classList.add('ww-scroll-ready');
-  track.setAttribute('tabindex', '0'); // make focusable for keyboard
 
-  // Enable snap-to-center for buttery magnetic feel
-  track.style.scrollSnapType = 'x mandatory';
+  // Enable snap-to-start for buttery magnetic feel
+  scroller.style.scrollSnapType = 'x mandatory';
 
   // Add click handler to activate video embeds
-  track.querySelectorAll('.video-embed-container').forEach(container => {
+  scroller.querySelectorAll('.video-embed-container').forEach(container => {
     container.addEventListener('click', () => {
       container.classList.add('active');
     });
   });
 
-  enforceOrder(track);
-  attachWheelWithAcceleration(track);
-  attachKeyboard(track);
-  attachHeaderHover(track);
+  // Enforce slide order
+  enforceOrder(scroller);
 
-  console.log('[carousel] initialized:', track);
+  // Setup header fade/show behavior
+  setupHeaderFade();
+
+  // Console logs for verification
+  console.log('[carousel] order enforced:', ORDER);
+  console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
+  console.log('[carousel] keyboard arrows ready');
+  console.log('[carousel] header fade/show-on-hover ready');
+  console.log('[carousel] initialized:', scroller);
+}
+
+function enforceOrder(scroller) {
+  const rank = new Map(ORDER.map((k, i) => [k, i]));
+  const kids = Array.from(scroller.children).map(el => {
+    const key = el.id || '';
+    return { el, key };
+  });
+  kids.sort((a, b) => (rank.get(a.key) ?? 999) - (rank.get(b.key) ?? 999));
+  kids.forEach(({ el }) => scroller.appendChild(el));
+}
+
+function setupHeaderFade() {
+  const header = document.querySelector('#site-header');
+  if (!header) return;
+
+  let idleTimer = null;
+
+  function showHeader() {
+    header.classList.add('show-on-hover');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      header.classList.remove('show-on-hover');
+    }, 2000); // hide after 2s of inactivity
+  }
+
+  // Show header when mouse moves near top 15% of viewport
+  document.addEventListener('mousemove', (e) => {
+    if (e.clientY < window.innerHeight * 0.15) {
+      showHeader();
+    }
+  });
+
+  // Show when navigation receives focus
+  const navLinks = header.querySelectorAll('a, button, [tabindex]');
+  navLinks.forEach(link => {
+    link.addEventListener('focus', showHeader);
+  });
+
+  // Also show on direct header hover
+  header.addEventListener('mouseenter', showHeader);
 }
