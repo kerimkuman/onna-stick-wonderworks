@@ -17,7 +17,7 @@
   "author": "Onna-Stick Wonderworks",
   "license": "ISC",
   "devDependencies": {
-    "vite": "^5.4.11"
+    "vite": "^7.1.9"
   },
   "engines": {
     "node": ">=20.0.0"
