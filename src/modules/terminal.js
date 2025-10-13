@@ -1,9 +1,6 @@
 /**
  * Minimal terminal: ASCII-only boot + FAQ with typewriter and keyboard control.
- * Now uses new audio system with SFX routing
  */
-import { playSfx } from './sfx.js';
-import { AudioBus } from './audio-bus.js';
 
 const FAQ = [
   { q: "What is Onna-Stick Wonderworks?", a: "A small, sharp studio that turns complicated brand magic into useful tools. Think: practical wizard." },
@@ -33,8 +30,6 @@ function typeText(el, text, speed = 14, done) {
   typingTimer = setInterval(() => {
     if (i < text.length) {
       el.textContent += text[i++];
-      // Play typing sound (SFX - not affected by music mute)
-      if (i % 3 === 0) playSfx('typing');
     } else {
       clearInterval(typingTimer);
       if (done) done();
@@ -50,7 +45,6 @@ function renderList(listEl) {
     div.textContent = "> " + row.q;
     div.tabIndex = i === active ? 0 : -1;
     div.addEventListener("click", () => {
-      playSfx('click'); // SFX click sound
       active = i;
       renderList(listEl);
       showAnswer();
@@ -86,25 +80,7 @@ export function initTerminal(){
     return;
   }
 
-  // Mute button now toggles SFX only (terminal sounds)
-  if (muteBtn) {
-    let sfxMuted = false;
-    muteBtn.addEventListener('click', () => {
-      playSfx('click');
-      sfxMuted = !sfxMuted;
-      muteBtn.textContent = sfxMuted ? '🔇' : '🔊';
-
-      // Store SFX mute state
-      const currentVol = AudioBus.getVolume('sfx');
-      if (sfxMuted) {
-        localStorage.setItem('audio.v1.sfx.temp-volume', String(currentVol));
-        AudioBus.setVolume('sfx', 0);
-      } else {
-        const savedVol = parseFloat(localStorage.getItem('audio.v1.sfx.temp-volume') || '0.8');
-        AudioBus.setVolume('sfx', savedVol);
-      }
-    });
-  }
+  // Mute button removed - no longer needed
 
   // Boot banner
   bootlines.textContent = "";
@@ -130,21 +106,18 @@ export function initTerminal(){
   function onKey(e) {
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      playSfx('click');
       active = (active - 1 + FAQ.length) % FAQ.length;
       renderList(qList);
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      playSfx('click');
       active = (active + 1) % FAQ.length;
       renderList(qList);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      playSfx('click');
       showAnswer();
     }
   }
   window.addEventListener("keydown", onKey);
 
-  console.log("[terminal] minimal FAQ ready with SFX routing");
+  console.log("[terminal] minimal FAQ ready");
 }

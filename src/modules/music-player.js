@@ -255,8 +255,8 @@ class MusicPlayerClass {
     const track = this.playlist[index];
 
     this.currentAudio = new Audio(track.src);
-    this.currentAudio.volume = AudioBus.getVolume('music');
     this.currentAudio.preload = 'auto';
+    this._updateVolume();
 
     // Restore playback position if resuming
     if (this.currentTime > 0 && this.currentTime < this.currentAudio.duration) {
@@ -360,6 +360,19 @@ class MusicPlayerClass {
     } catch (error) {
       // Ignore load errors
     }
+  }
+
+  _updateVolume() {
+    if (this.currentAudio) {
+      this.currentAudio.volume = AudioBus.getVolume('music');
+    }
+  }
+
+  /**
+   * Update volume from external source
+   */
+  updateVolume() {
+    this._updateVolume();
   }
 
   _attachUnlockListeners() {
