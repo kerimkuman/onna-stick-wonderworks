@@ -154,12 +154,38 @@ export function initCarousel() {
   // Setup header fade/show behavior
   setupHeaderFade();
 
+  // Setup video autoplay on slide visibility
+  setupVideoAutoplay(scroller);
+
   // Console logs for verification
   console.log('[carousel] order enforced:', ORDER);
   console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
   console.log('[carousel] keyboard arrows ready');
   console.log('[carousel] header fade/show-on-hover ready');
   console.log('[carousel] initialized:', scroller);
+}
+
+function setupVideoAutoplay(scroller) {
+  const videos = scroller.querySelectorAll('video');
+  if (videos.length === 0) return;
+
+  const observerOptions = {
+    root: scroller,
+    threshold: 0.5  // Play when 50% of video is visible
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting) {
+        video.play().catch(() => {}); // Ignore autoplay failures
+      } else {
+        video.pause();
+      }
+    });
+  }, observerOptions);
+
+  videos.forEach(video => observer.observe(video));
 }
 
 function enforceOrder(scroller) {
