@@ -81,11 +81,17 @@ export function initTerminal(){
     return;
   }
 
-  // Mute button functionality
+  // Mute button functionality (sync with global button)
   if (muteBtn) {
     muteBtn.addEventListener('click', () => {
       const muted = toggleMute();
       muteBtn.textContent = muted ? '🔇' : '🔊';
+
+      // Sync with global mute button
+      const globalMuteBtn = document.getElementById('globalMuteBtn');
+      if (globalMuteBtn) {
+        globalMuteBtn.textContent = muted ? '🔇' : '🔊';
+      }
     });
   }
 

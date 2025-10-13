@@ -1,7 +1,9 @@
 ﻿/**
  * PAGE SETUP MODULE
- * Handles home/site view transitions and footer updates
+ * Handles home/site view transitions, footer updates, and audio controls
  */
+
+import { toggleMute } from './audio.js';
 
 export function initPageSetup() {
   const homeContainer = document.getElementById('home-container');
@@ -15,6 +17,23 @@ export function initPageSetup() {
   yearSpans.forEach(span => {
     span.textContent = currentYear;
   });
+
+  // Setup global mute button in header (sync with terminal button)
+  const globalMuteBtn = document.getElementById('globalMuteBtn');
+  if (globalMuteBtn) {
+    globalMuteBtn.addEventListener('click', () => {
+      const muted = toggleMute();
+      globalMuteBtn.textContent = muted ? '🔇' : '🔊';
+
+      // Sync with terminal mute button
+      const terminalMuteBtn = document.getElementById('muteBtn');
+      if (terminalMuteBtn) {
+        terminalMuteBtn.textContent = muted ? '🔇' : '🔊';
+      }
+
+      console.log(`[page-setup] audio ${muted ? 'muted' : 'unmuted'}`);
+    });
+  }
 
   // Handle enter site button
   if (enterBtn) {

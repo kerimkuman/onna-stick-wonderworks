@@ -14,6 +14,7 @@ const BGM_TRACKS = [
 ];
 
 const AMBIENT_TRACKS = {
+  wonderworks: '/assets/ambience-witches-cauldron.mp3',
   terminal: '/assets/ambience-witches-cauldron.mp3',
   computer: '/assets/ambient-computer-noise.mp3'
 };
@@ -23,12 +24,16 @@ export function initAudio() {
   const randomTrack = BGM_TRACKS[Math.floor(Math.random() * BGM_TRACKS.length)];
   bgmAudio = new Audio(randomTrack);
   bgmAudio.loop = true;
-  bgmAudio.volume = 0.3;
+  bgmAudio.volume = 0.25;
+  bgmAudio.playbackRate = 1.0; // Ensure normal speed
+  bgmAudio.preservesPitch = true;
 
-  // Create ambient audio for terminal
-  ambientAudio = new Audio(AMBIENT_TRACKS.terminal);
+  // Create ambient audio
+  ambientAudio = new Audio();
   ambientAudio.loop = true;
-  ambientAudio.volume = 0.2;
+  ambientAudio.volume = 0.15;
+  ambientAudio.playbackRate = 1.0; // Ensure normal speed
+  ambientAudio.preservesPitch = true;
 
   console.log('[audio] initialized (muted by default)');
 }
