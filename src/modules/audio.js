@@ -148,9 +148,11 @@ function restoreState() {
 
     bgmIndex = Math.max(0, Math.min(BGM_TRACKS.length - 1, idx));
 
+    // Start unpaused if not muted
+    bgmPaused = isMusicMuted;
+
     if (bgmAudio) {
       bgmAudio.volume = sliderToVolume(mSlider);
-      bgmAudio.muted = isMusicMuted;
       try {
         if (t > 0 && t < bgmAudio.duration) {
           bgmAudio.currentTime = t;
@@ -160,13 +162,14 @@ function restoreState() {
 
     if (ambientAudio) {
       ambientAudio.volume = sliderToVolume(aSlider);
-      ambientAudio.muted = isMusicMuted;
       try {
         if (aT > 0) {
           ambientAudio.currentTime = aT;
         }
       } catch {}
     }
+
+    console.log(`[audio] restored: muted=${isMusicMuted}, paused=${bgmPaused}, vol=${mSlider}`);
   } catch {}
 }
 
@@ -531,20 +534,21 @@ export async function preloadHomepageSfx() {
     try {
       const audio = new Audio(url);
       audio.preload = 'auto';
-      await audio.load();
+      audio.load();
       sfxCache.set(url, audio);
     } catch (e) {
       console.warn('[audio] sfx preload failed:', url);
     }
   }
 
-  // Create persistent hover loop element
+  // Create persistent hover loop element (paused by default)
   hoverLoopAudio = new Audio(SFX.logoHover);
   hoverLoopAudio.preload = 'auto';
   hoverLoopAudio.loop = true;
-  hoverLoopAudio.volume = 0.8;
+  hoverLoopAudio.volume = 0; // Start at 0, will fade in on hover
+  hoverLoopAudio.pause(); // Ensure it's paused
 
-  console.log('[audio] homepage SFX preloaded');
+  console.log('[audio] homepage SFX preloaded (paused)');
 }
 
 /**
@@ -575,26 +579,29 @@ export async function stopDoorwayHover() {
 }
 
 /**
- * HOME DOORWAY CLICK - Stop hover, play click once
+ * HOME DOORWAY CLICK - Stop hover, play click once with fade out
  * NO OVERLAP: hover loop must stop before click plays
  */
 export async function playDoorwayClick() {
   if (!sfxEnabled) return;
 
   // CRITICAL: Stop hover loop first (no overlap)
-  stopDoorwayHover();
+  await stopDoorwayHover();
 
-  // Play click one-shot
+  // Play click one-shot with fade out
   try {
     const clickAudio = new Audio(SFX.logoClick);
     clickAudio.volume = 0.8;
     await clickAudio.play();
 
-    // Auto cleanup
-    clickAudio.onended = () => {
+    // Fade out after a short delay
+    setTimeout(async () => {
+      await fadeTo(clickAudio, 0, 120);
+      clickAudio.pause();
       clickAudio.src = '';
       clickAudio.remove();
-    };
+    }, clickAudio.duration * 1000 - 150); // Fade out in last 150ms
+
   } catch (e) {
     // Ignore - SFX failures are non-critical
   }
