@@ -82,9 +82,9 @@ const LS = {
 // ==================== ASSETS ====================
 
 const BGM_TRACKS = [
-  '/assets/bgm-1.mp3',
-  '/assets/bgm-2.mp3',
-  '/assets/bgm-3.mp3'
+  '/assets/onnastick-bgm-1-copyright-kk.mp3',
+  '/assets/onnastick-bgm-2-copyright-kk.mp3',
+  '/assets/onnastick-bgm-3-copyright-kk.mp3'
 ];
 
 const AMBIENT_SRC = '/assets/ambience-witches-cauldron.mp3';
