@@ -6,7 +6,6 @@
 // Import styles
 import './styles/site.css';
 import './styles/terminal.css';
-import './styles/mascot.css';
 
 // Import modules
 import { initPageSetup } from './modules/page-setup.js';
@@ -20,9 +19,6 @@ import * as AudioWeb from './modules/audio-web.js';
 // Import mascot bard
 import { injectMascotCSS, initMascotBard } from './ui/mascot-bard.js';
 import { IDLE_COPY } from './ui/mascot-copy.js';
-
-// Import mascot controller
-import { initMascotController } from './modules/mascot-controller.js';
 
 // Initialize app when DOM is ready
 if (document.readyState === 'loading') {
@@ -65,14 +61,6 @@ async function init() {
     console.log('[main] audio-web system initialized');
   } catch (error) {
     console.error('× Audio-web system failed:', error);
-  }
-
-  // Initialize Mascot Controller (positioning, speech bubble, interactions)
-  try {
-    initMascotController();
-    console.log('[main] mascot controller initialized');
-  } catch (error) {
-    console.error('× Mascot controller failed:', error);
   }
 
   // Initialize Mascot Bard

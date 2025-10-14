@@ -102,14 +102,14 @@ export function initMascotBard({
   if (!lottieLib) { console.warn('[mascot] lottie-web not found'); return ()=>{}; }
 
   const anim = lottieLib.loadAnimation({
-    container:host, renderer:'svg', loop:!RM, autoplay:!RM, path:lottiePath, name:'mascot-bard'
+    container:host, renderer:'svg', loop:false, autoplay:false, path:lottiePath, name:'mascot-bard'
   });
 
   // Pause when offscreen to save GPU (if IntersectionObserver available)
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(([e])=>{
-      if (e && e.isIntersecting) { if (!RM) anim.play(); }
-      else { anim.pause(); }
+      if (e && !e.isIntersecting) { anim.pause(); }
+      // Don't auto-play when visible - only play when explicitly triggered
     }, {threshold:0.1});
     io.observe(host);
   }
