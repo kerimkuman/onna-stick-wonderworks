@@ -1,5 +1,7 @@
 /* mascot-bard.js — Lottie mascot with speech bubble + POI nudges (reduced-motion + a11y) */
 
+import { POI_TIPS } from './mascot-copy.js';
+
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SEEN_KEY = 'guide.v1.seen';
 const IDLE_KEY = 'guide.v1.idleShown';
@@ -9,12 +11,15 @@ function setSeen(id){ const s=getSeen(); s.add(id); sessionStorage.setItem(SEEN_
 function oncePerSession(key){ if(sessionStorage.getItem(key)) return false; sessionStorage.setItem(key,'1'); return true; }
 
 function collectPOIs(){
-  return [...document.querySelectorAll('[data-poi]')].map(el=>({
-    el,
-    id: el.getAttribute('data-poi-id') || el.id || Math.random().toString(36).slice(2),
-    tip: el.getAttribute('data-poi-tip') || 'This might be more interesting than it looks.',
-    prio: parseInt(el.getAttribute('data-poi-priority')||'999',10)
-  })).sort((a,b)=>a.prio-b.prio);
+  return [...document.querySelectorAll('[data-poi]')].map(el=>{
+    const id = el.getAttribute('data-poi-id') || el.id || Math.random().toString(36).slice(2);
+    return {
+      el,
+      id,
+      tip: POI_TIPS[id] || 'This might be more interesting than it looks.',
+      prio: parseInt(el.getAttribute('data-poi-priority')||'999',10)
+    };
+  }).sort((a,b)=>a.prio-b.prio);
 }
 
 function makeBubble(){
@@ -22,17 +27,17 @@ function makeBubble(){
   b.className = 'mascot-bubble';
   b.innerHTML = `<div class="mb-wrap"> <div class="mb-text" aria-live="polite"></div> <div class="mb-cta"></div> </div> <div class="mb-arrow"></div>`;
   Object.assign(b.style, {
-    position:'fixed', zIndex:'40', maxWidth:'340px',
+    position:'fixed', zIndex:'950', maxWidth:'320px',
     background:'rgba(16,16,22,.96)', color:'#eee',
-    padding:'12px 14px', borderRadius:'12px',
-    border:'1px solid rgba(255,255,255,.1)',
-    boxShadow:'0 8px 20px rgba(0,0,0,.35)',
+    padding:'12px 16px', borderRadius:'12px',
+    border:'1px solid rgba(255,255,255,.12)',
+    boxShadow:'0 8px 24px rgba(0,0,0,.4)',
     transform:'translate(-8px,-16px)', opacity:'0',
-    transition:'opacity .18s ease', pointerEvents:'none'
+    transition:'opacity .22s ease', pointerEvents:'none'
   });
   const arrow = b.querySelector('.mb-arrow');
   Object.assign(arrow.style, {
-    position:'absolute', right:'16px', bottom:'-8px',
+    position:'absolute', right:'18px', bottom:'-8px',
     width:'0', height:'0', borderLeft:'8px solid transparent',
     borderRight:'8px solid transparent',
     borderTop:'8px solid rgba(16,16,22,.96)'
@@ -50,30 +55,30 @@ function pulse(el){
 function posBubbleNear(b, rect){
   // Anchor bubble to the mascot position (comic-style, pointing down to mascot)
   let x = rect.left + (rect.width / 2);
-  let y = rect.top - 12;
+  let y = rect.top - 16;
 
-  // Check navbar collision (safe zone = navbar rect + 12px margin)
+  // Check navbar collision (safe zone = navbar rect + 16px margin)
   const navbar = document.querySelector('#site-header');
   if (navbar) {
     const navRect = navbar.getBoundingClientRect();
     const safeZone = {
-      top: navRect.top - 12,
-      bottom: navRect.bottom + 12,
-      left: navRect.left - 12,
-      right: navRect.right + 12
+      top: navRect.top - 16,
+      bottom: navRect.bottom + 16,
+      left: navRect.left - 16,
+      right: navRect.right + 16
     };
 
-    // If bubble would overlap navbar, nudge it down
+    // If bubble would overlap navbar, nudge it down below navbar
     if (y < safeZone.bottom && x > safeZone.left && x < safeZone.right) {
-      y = safeZone.bottom;
+      y = safeZone.bottom + 20;
     }
   }
 
   // Keep away from viewport edges
-  const bubbleHeight = 200; // estimate
-  const bubbleWidth = 340; // max-width from bubble styles
-  y = Math.max(bubbleHeight + 16, y); // Don't go off top
-  x = Math.min(Math.max(bubbleWidth/2 + 16, x), window.innerWidth - bubbleWidth/2 - 16);
+  const bubbleHeight = 180; // estimate (reduced from 200)
+  const bubbleWidth = 320; // max-width from bubble styles (reduced from 340)
+  y = Math.max(bubbleHeight + 20, y); // Don't go off top
+  x = Math.min(Math.max(bubbleWidth/2 + 20, x), window.innerWidth - bubbleWidth/2 - 20);
 
   b.style.left = `${x}px`;
   b.style.top = `${y}px`;
@@ -179,7 +184,7 @@ export function initMascotBard({
     }
     showMascot();
     const rect = host.getBoundingClientRect();
-    showBubbleAt(rect, '✨ Hello there!', null);
+    showBubbleAt(rect, 'Welcome to Wonderworks. Mind the enchantments.', null);
     setTimeout(hide, 2200);
   });
 
@@ -193,7 +198,7 @@ export function initMascotBard({
       }
       showMascot();
       const rect = host.getBoundingClientRect();
-      showBubbleAt(rect, '✨ Hello there!', null);
+      showBubbleAt(rect, 'Welcome to Wonderworks. Mind the enchantments.', null);
       setTimeout(hide, 2200);
     }
   });
@@ -278,14 +283,14 @@ export function initMascotBard({
   });
   scheduleIdle();
 
-  // Home page nudge: show "Click the logo ✨" after 2s if on home page
+  // Home page nudge: show doorway hint after 2s if on home page
   const homeLogo = document.querySelector('.logo-home, #logoDoorway');
   if (homeLogo && oncePerSession('home-logo-nudge')) {
     setTimeout(() => {
       if (destroyed) return;
       const rect = host.getBoundingClientRect();
-      showBubbleAt(rect, 'Click the logo ✨', null);
-      setTimeout(hide, 2200);
+      showBubbleAt(rect, 'Tap the crest if you fancy a tour. Mind the sparkles.', null);
+      setTimeout(hide, 3500);
     }, 2000);
   }
 

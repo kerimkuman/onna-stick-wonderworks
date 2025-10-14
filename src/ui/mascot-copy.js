@@ -4,6 +4,13 @@
  * No spam, no cringe, just tasteful nudges
  */
 
+// POI (Point of Interest) tips - triggered when user hovers/focuses specific elements
+export const POI_TIPS = {
+  doorway: "See that doorway? Perfectly safe. Well, statistically acceptable.",
+  'faq-link': "Our FAQ knows answers and questions. Very nosy.",
+  carousel: "Wheel over the gallery—slides obey sideways gravity here."
+};
+
 export const IDLE_COPY = {
   HOME: [
     { text: "Welcome to Wonderworks. Mind the enchantments; they mind you back." },

@@ -1,18 +1,69 @@
+/* ==================== HUD HEIGHT VARIABLES ==================== */
+:root {
+  --hud-height-desktop: 64px;
+  --hud-height-mobile: 56px;
+  --hud-height: clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop));
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
-body { font-family: 'Inter', sans-serif; background: #000; color: #cbd5e1; line-height: 1.6; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #000;
+  color: #cbd5e1;
+  line-height: 1.6;
+  /* Reserve space for HUD + safe area */
+  padding-bottom: clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop));
+  padding-bottom: calc(clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop)) + env(safe-area-inset-bottom));
+}
 body.scroll-locked { overflow: hidden; }
-main { scroll-behavior: smooth; }
+main {
+  scroll-behavior: smooth;
+  /* Additional bottom padding for page content */
+  padding-bottom: clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop));
+}
 section { position: relative; height: 100vh; height: 100dvh; scroll-snap-align: start; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 1; z-index: 0; }
 
 /* Header */
-#site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(0, 0, 0, 0.6); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding: 1rem; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+#site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--hud-height-desktop);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 768px) {
+  #site-header {
+    height: var(--hud-height-mobile);
+    padding: 0 16px;
+  }
+}
 #site-header.header-hidden { transform: translateY(-100%); opacity: 0; }
 #site-header.header-idle { opacity: 0.5; }
 body.in-carousel #site-header { opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 body.in-carousel #site-header.show-on-hover { opacity: 1; pointer-events: auto; }
-.header-container { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.header-container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
 .header-logo { width: 64px; height: 64px; border-radius: 50%; }
 .header-nav { display: none; gap: 2rem; list-style: none; align-items: center; }
 .header-nav a { color: #cbd5e1; text-decoration: none; font-weight: 500; transition: color 0.2s; }
@@ -21,25 +72,36 @@ body.in-carousel #site-header.show-on-hover { opacity: 1; pointer-events: auto; 
 .audio-control-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
 .audio-control-btn:focus { outline: 2px solid #6366f1; outline-offset: 2px; }
 
-/* Audio Controls - Subtle Fixed Bottom Bar */
+/* Audio Controls - HUD mirroring top nav */
 .audio-controls-fixed {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  width: 100%;
+  height: var(--hud-height-desktop);
   z-index: 900;
   background: rgba(11, 11, 15, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25);
-  padding: 0.625rem 1.25rem;
+  padding: 0 24px;
   opacity: 0.7;
   transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
 }
 
 .audio-controls-fixed:hover {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .audio-controls-fixed {
+    height: var(--hud-height-mobile);
+    padding: 0 16px;
+  }
 }
 
 .audio-controls-inner {
@@ -393,19 +455,31 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* Carousel styles consolidated: wheel scrolling is now JS-only (carousel.js) */
 /* Header fade behavior controlled by body.in-carousel + .show-on-hover (lines 13-14) */
 
-/* ==================== HOME LOGO HOVER EFFECT ==================== */
+/* ==================== HOME LOGO: ENLARGED + HOVER EFFECT ==================== */
 #logoDoorway {
+  /* Enlarge: 1.5x desktop, 1.25x mobile, max 56% of hero height */
+  width: 210px !important;  /* 140px * 1.5 */
+  height: 210px !important;
+  max-width: 56vh;
+  max-height: 56vh;
   transition: transform 0.22s ease, filter 0.22s ease;
   transform-origin: center;
 }
 
+@media (max-width: 768px) {
+  #logoDoorway {
+    width: 175px !important;  /* 140px * 1.25 */
+    height: 175px !important;
+  }
+}
+
 #logoDoorway:hover {
-  transform: translateY(-3px) scale(1.03);
-  filter: drop-shadow(0 0 16px rgba(255, 240, 180, 0.4)) brightness(1.08);
+  transform: translateY(-6px) scale(1.05);
+  filter: drop-shadow(0 0 20px rgba(255, 240, 180, 0.5)) brightness(1.1);
 }
 
 #logoDoorway:active {
-  transform: translateY(-1px) scale(1.01);
+  transform: translateY(-2px) scale(1.02);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -416,5 +490,61 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
     transform: none;
     filter: brightness(1.05);
   }
+}
+
+/* ==================== MASCOT POSITIONING ON HUD EDGE ==================== */
+#mascotGuide {
+  position: fixed;
+  /* Perch on HUD edge - desktop */
+  bottom: calc(var(--hud-height-desktop) - 8px) !important;
+  right: 24px !important;
+  width: 140px;
+  height: 140px;
+  z-index: 901;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  #mascotGuide {
+    /* Perch on HUD edge - mobile */
+    bottom: calc(var(--hud-height-mobile) - 6px) !important;
+    right: 16px !important;
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Mascot bubble positioning */
+.mascot-bubble {
+  /* Ensure bubble appears above HUD (900) and mascot (901), below modals */
+  z-index: 950 !important;
+}
+
+.mascot-bubble .mb-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.mascot-bubble .mb-text {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #f1f5f9;
+}
+
+.mascot-bubble .mb-cta {
+  margin-top: 10px;
+}
+
+/* Home hero: ensure CTA doesn't hide under HUD */
+#home-door {
+  padding-bottom: clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop));
+}
+
+#welcome {
+  min-height: 100svh;
+  padding-bottom: calc(clamp(var(--hud-height-mobile), 6vh, var(--hud-height-desktop)) + 2rem);
 }
 
