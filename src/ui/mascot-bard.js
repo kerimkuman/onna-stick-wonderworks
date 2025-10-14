@@ -1,10 +1,11 @@
 /* mascot-bard.js — Lottie mascot with speech bubble + POI nudges (reduced-motion + a11y) */
 
-import { POI_TIPS } from './mascot-copy.js';
+import { POI_TIPS, CLICK_GREETINGS } from './mascot-copy.js';
 
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SEEN_KEY = 'guide.v1.seen';
 const IDLE_KEY = 'guide.v1.idleShown';
+let greetingIndex = 0; // Track which greeting to show next
 
 function getSeen(){ try{return new Set(JSON.parse(sessionStorage.getItem(SEEN_KEY)||'[]'))}catch{return new Set()}}
 function setSeen(id){ const s=getSeen(); s.add(id); sessionStorage.setItem(SEEN_KEY, JSON.stringify([...s])); }
@@ -176,7 +177,7 @@ export function initMascotBard({
     }
   }, { passive: true });
 
-  // One-shot wave on click
+  // One-shot wave on click - rotate through greetings
   host.addEventListener('click', () => {
     if (!RM) {
       anim.goToAndStop(0, true); // Reset to start
@@ -184,11 +185,13 @@ export function initMascotBard({
     }
     showMascot();
     const rect = host.getBoundingClientRect();
-    showBubbleAt(rect, 'Welcome to Wonderworks. Mind the enchantments.', null);
-    setTimeout(hide, 2200);
+    const greeting = CLICK_GREETINGS[greetingIndex % CLICK_GREETINGS.length];
+    greetingIndex++;
+    showBubbleAt(rect, greeting, null);
+    setTimeout(hide, 3000);
   });
 
-  // Keyboard support (Enter/Space)
+  // Keyboard support (Enter/Space) - rotate through greetings
   host.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -198,12 +201,28 @@ export function initMascotBard({
       }
       showMascot();
       const rect = host.getBoundingClientRect();
-      showBubbleAt(rect, 'Welcome to Wonderworks. Mind the enchantments.', null);
-      setTimeout(hide, 2200);
+      const greeting = CLICK_GREETINGS[greetingIndex % CLICK_GREETINGS.length];
+      greetingIndex++;
+      showBubbleAt(rect, greeting, null);
+      setTimeout(hide, 3000);
     }
   });
 
   armFadeTimer();
+
+  // Global click celebration - mascot waves when user clicks anywhere
+  document.addEventListener('click', (e) => {
+    // Skip if clicking mascot itself (handled above) or inside bubble
+    if (host.contains(e.target) || bubble.contains(e.target)) return;
+
+    // Play celebration animation (no bubble)
+    if (!RM) {
+      anim.goToAndStop(0, true);
+      anim.play();
+    }
+    showMascot();
+    armFadeTimer();
+  }, { passive: true });
 
   function showBubbleAt(rect, text, cta){
     host.classList.add('is-speaking');

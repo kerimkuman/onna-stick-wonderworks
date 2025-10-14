@@ -11,6 +11,20 @@ export const POI_TIPS = {
   carousel: "Wheel over the gallery—slides obey sideways gravity here."
 };
 
+// Mascot direct click responses - rotate through these
+export const CLICK_GREETINGS = [
+  "Welcome to Wonderworks. Mind the enchantments.",
+  "Things here are perfectly safe. By which we mean: statistically comforting.",
+  "If it glows, it's either important or hungry. Possibly both.",
+  "We sell solutions. Side-effects included at no extra charge.",
+  "Curiosity killed the cat. Satisfaction filed a robust appeal.",
+  "The cauldron hums when you're here. Leave, and it sulks.",
+  "If you hear whispering, that's ambience. If it answers—still ambience.",
+  "Witches recommend responsible browsing. We recommend it faster.",
+  "One miracle at a time. Reality appreciates queues.",
+  "Contracts in ink, blood optional. Kidding. Mostly."
+];
+
 export const IDLE_COPY = {
   HOME: [
     { text: "Welcome to Wonderworks. Mind the enchantments; they mind you back." },

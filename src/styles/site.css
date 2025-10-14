@@ -63,8 +63,21 @@ body.in-carousel #site-header.show-on-hover { opacity: 1; pointer-events: auto; 
   justify-content: space-between;
   align-items: center;
   height: 100%;
+  padding: 8px 0; /* Vertical breathing room for logo */
 }
-.header-logo { width: 64px; height: 64px; border-radius: 50%; }
+.header-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .header-logo {
+    width: 40px;
+    height: 40px;
+  }
+}
 .header-nav { display: none; gap: 2rem; list-style: none; align-items: center; }
 .header-nav a { color: #cbd5e1; text-decoration: none; font-weight: 500; transition: color 0.2s; }
 .header-nav a:hover { color: #818cf8; }
@@ -457,19 +470,19 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 
 /* ==================== HOME LOGO: ENLARGED + HOVER EFFECT ==================== */
 #logoDoorway {
-  /* Enlarge: 1.5x desktop, 1.25x mobile, max 56% of hero height */
-  width: 210px !important;  /* 140px * 1.5 */
-  height: 210px !important;
-  max-width: 56vh;
-  max-height: 56vh;
+  /* Enlarge: 2.25x desktop (1.5 * 1.5), 1.75x mobile, max 62% of hero height */
+  width: 315px !important;  /* 210px * 1.5 = 315px (2.25x original 140px) */
+  height: 315px !important;
+  max-width: 62vh;
+  max-height: 62vh;
   transition: transform 0.22s ease, filter 0.22s ease;
   transform-origin: center;
 }
 
 @media (max-width: 768px) {
   #logoDoorway {
-    width: 175px !important;  /* 140px * 1.25 */
-    height: 175px !important;
+    width: 245px !important;  /* 140px * 1.75 */
+    height: 245px !important;
   }
 }
 
@@ -495,25 +508,26 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* ==================== MASCOT POSITIONING ON HUD EDGE ==================== */
 #mascotGuide {
   position: fixed;
-  /* Perch on HUD edge - desktop */
-  bottom: calc(var(--hud-height-desktop) - 8px) !important;
+  /* Perch ON the audio bar line - desktop */
+  bottom: var(--hud-height-desktop) !important;
   right: 24px !important;
   width: 140px;
   height: 140px;
   z-index: 901;
   opacity: 1;
   pointer-events: auto;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
   cursor: pointer;
+  transform: translateY(50%); /* Half sits on bar, half above */
 }
 
 @media (max-width: 768px) {
   #mascotGuide {
-    /* Perch on HUD edge - mobile */
-    bottom: calc(var(--hud-height-mobile) - 6px) !important;
+    /* Perch ON the audio bar line - mobile */
+    bottom: var(--hud-height-mobile) !important;
     right: 16px !important;
-    width: 120px;
-    height: 120px;
+    width: 110px;
+    height: 110px;
   }
 }
 
