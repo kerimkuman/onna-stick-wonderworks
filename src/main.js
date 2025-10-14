@@ -13,8 +13,8 @@ import { initCarousel } from './modules/carousel.js';
 import { initNav } from './modules/nav.js';
 import { initTerminal } from './modules/terminal.js';
 
-// Import simplified audio system
-import * as Audio from './modules/audio.js';
+// Import Web Audio API system
+import * as AudioWeb from './modules/audio-web.js';
 
 // Import mascot bard
 import { injectMascotCSS, initMascotBard } from './ui/mascot-bard.js';
@@ -52,21 +52,15 @@ async function init() {
     console.error('× Terminal failed:', error);
   }
 
-  // Initialize simplified audio system
+  // Initialize Web Audio API system
   try {
-    Audio.initAudio();
-    Audio.setupAmbientRouting();
-    await Audio.preloadHomepageSfx();
-
-    // Initialize UI controls (will create in next step)
+    await AudioWeb.init();
     initAudioControls();
-
-    // Setup homepage SFX
+    setupWonderworksAmbient();
     setupHomepageSfx();
-
-    console.log('[main] audio system initialized');
+    console.log('[main] audio-web system initialized');
   } catch (error) {
-    console.error('× Audio system failed:', error);
+    console.error('× Audio-web system failed:', error);
   }
 
   // Initialize Mascot Bard
@@ -77,7 +71,6 @@ async function init() {
       lottiePath: '/lottie/hi-demo-2.json',
       idleAfterMs: 7000,
       betweenIdleMs: 14000,
-      poiPingSfx: '/assets/sfx-logo-hover.mp3',
       onCTA: (id) => {
         if (id === 'doorway') {
           const logoDoorway = document.getElementById('logoDoorway');
@@ -104,8 +97,7 @@ async function init() {
       idleLines: IDLE_COPY.HOME
     });
 
-    // Initialize mascot cursor following on home page
-    setupMascotCursorFollow();
+    // Mascot is now globally visible (fixed position), no cursor following needed
 
     console.log('[main] mascot bard initialized');
   } catch (error) {
@@ -167,25 +159,30 @@ function initAudioControls() {
 }
 
 function wireAudioControls() {
+  // Initialize track info display
+  updateTrackInfo();
+
   // Play/Pause button
   const playPause = document.getElementById('audio-play-pause');
   if (playPause) {
     playPause.addEventListener('click', async () => {
-      if (Audio.audioState.bgmPaused) {
-        await Audio.playBGM();
-        updatePlayPauseButton(false);
-      } else {
-        Audio.pauseBGM();
+      const state = AudioWeb.getState();
+      if (state.playing) {
+        await AudioWeb.pauseBGM();
         updatePlayPauseButton(true);
+      } else {
+        await AudioWeb.playBGM();
+        updatePlayPauseButton(false);
+        updateTrackInfo();
       }
     });
   }
 
-  // Previous button
+  // Prev button
   const prev = document.getElementById('audio-prev');
   if (prev) {
     prev.addEventListener('click', async () => {
-      await Audio.prevBGM();
+      await AudioWeb.prevBGM();
       updateTrackInfo();
     });
   }
@@ -194,32 +191,32 @@ function wireAudioControls() {
   const next = document.getElementById('audio-next');
   if (next) {
     next.addEventListener('click', async () => {
-      await Audio.nextBGM();
+      await AudioWeb.nextBGM();
       updateTrackInfo();
     });
   }
 
-  // BGM volume slider with quadratic curve
+  // BGM volume slider
   const bgmVolume = document.getElementById('bgm-volume');
   if (bgmVolume) {
-    const volumes = Audio.getVolume();
-    bgmVolume.value = Math.round(volumes.bgm * 100);
+    const state = AudioWeb.getState();
+    bgmVolume.value = Math.round(state.volumes.music * 100);
 
     bgmVolume.addEventListener('input', (e) => {
-      const sliderValue = parseInt(e.target.value) / 100; // 0-1
-      Audio.setVolume(sliderValue, null);
+      const sliderValue = parseInt(e.target.value) / 100;
+      AudioWeb.setMusicVolume(sliderValue);
     });
   }
 
-  // Ambient volume slider with quadratic curve
+  // Ambient volume slider
   const ambientVolume = document.getElementById('ambient-volume');
   if (ambientVolume) {
-    const volumes = Audio.getVolume();
-    ambientVolume.value = Math.round(volumes.ambient * 100);
+    const state = AudioWeb.getState();
+    ambientVolume.value = Math.round(state.volumes.ambient * 100);
 
     ambientVolume.addEventListener('input', (e) => {
-      const sliderValue = parseInt(e.target.value) / 100; // 0-1
-      Audio.setVolume(null, sliderValue);
+      const sliderValue = parseInt(e.target.value) / 100;
+      AudioWeb.setAmbientVolume(sliderValue);
     });
   }
 
@@ -230,24 +227,25 @@ function wireAudioControls() {
     switch (e.key.toLowerCase()) {
       case ' ': // Space - Play/Pause
         e.preventDefault();
-        if (Audio.audioState.bgmPaused) {
-          await Audio.playBGM();
-          updatePlayPauseButton(false);
-        } else {
-          Audio.pauseBGM();
+        const state = AudioWeb.getState();
+        if (state.playing) {
+          await AudioWeb.pauseBGM();
           updatePlayPauseButton(true);
+        } else {
+          await AudioWeb.playBGM();
+          updatePlayPauseButton(false);
         }
         break;
 
       case 'n': // N - Next track
         e.preventDefault();
-        await Audio.nextBGM();
+        await AudioWeb.nextBGM();
         updateTrackInfo();
         break;
 
       case 'm': // M - Toggle mute
         e.preventDefault();
-        Audio.toggleMute();
+        AudioWeb.toggleMusicMute();
         break;
 
       case '[': // [ - Volume down
@@ -255,7 +253,7 @@ function wireAudioControls() {
         if (bgmVolume) {
           const newVal = Math.max(0, parseInt(bgmVolume.value) - 5);
           bgmVolume.value = newVal;
-          Audio.setVolume(newVal / 100, null);
+          AudioWeb.setMusicVolume(newVal / 100);
         }
         break;
 
@@ -264,7 +262,7 @@ function wireAudioControls() {
         if (bgmVolume) {
           const newVal = Math.min(100, parseInt(bgmVolume.value) + 5);
           bgmVolume.value = newVal;
-          Audio.setVolume(newVal / 100, null);
+          AudioWeb.setMusicVolume(newVal / 100);
         }
         break;
     }
@@ -294,8 +292,8 @@ function updateTrackInfo() {
   const trackInfo = document.getElementById('audio-track-info');
   if (!trackInfo) return;
 
-  const track = Audio.audioState.currentTrack;
-  trackInfo.textContent = `BGM ${track.index + 1}/${track.total}`;
+  const state = AudioWeb.getState();
+  trackInfo.textContent = `BGM ${state.track}/${state.total}`;
 }
 
 // ==================== HOMEPAGE DOORWAY SFX ====================
@@ -312,141 +310,67 @@ function setupHomepageSfx() {
   const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
   if (!isTouch) {
-    // DESKTOP ONLY: Hover loop with fades
+    // DESKTOP ONLY: Hover with Web Audio envelopes
     logoDoorway.addEventListener('mouseenter', () => {
-      Audio.startDoorwayHover();
+      AudioWeb.startLogoHover();
     });
 
     logoDoorway.addEventListener('focus', () => {
-      Audio.startDoorwayHover();
+      AudioWeb.startLogoHover();
     });
 
     logoDoorway.addEventListener('mouseleave', () => {
-      Audio.stopDoorwayHover();
+      AudioWeb.stopLogoHover();
     });
 
     logoDoorway.addEventListener('blur', () => {
-      Audio.stopDoorwayHover();
+      AudioWeb.stopLogoHover();
     });
   }
 
   // CLICK: Stop hover, play click once (NO OVERLAP) - ALL DEVICES
   logoDoorway.addEventListener('click', () => {
-    Audio.playDoorwayClick();
+    AudioWeb.playLogoClick();
   });
 
   // Keyboard activation (Enter/Space)
   logoDoorway.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      Audio.playDoorwayClick();
-      // Trigger the actual navigation
+      AudioWeb.playLogoClick();
       logoDoorway.click();
     }
   });
 
-  // Cleanup on visibility change / page unload
+  // Cleanup on visibility change
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      Audio.cleanupDoorwaySfx();
+      AudioWeb.stopLogoHover();
     }
   });
 
-  window.addEventListener('beforeunload', () => {
-    Audio.cleanupDoorwaySfx();
-  });
-
-  console.log(`[homepage-sfx] doorway SFX wired (touch: ${isTouch}, hover: ${!isTouch})`);
+  console.log(`[homepage-sfx] Web Audio SFX wired (touch: ${isTouch}, hover: ${!isTouch})`);
 }
 
-// ==================== MASCOT CURSOR FOLLOWING ====================
+// ==================== WONDERWORKS AMBIENT HOOKS ====================
 
-function setupMascotCursorFollow() {
-  const mascotHost = document.getElementById('mascotGuide');
-  const logoDoorway = document.getElementById('logoDoorway');
+function setupWonderworksAmbient() {
+  const sections = ['#wonderworks-intro', '#wonderworks-wrapper'];
 
-  if (!mascotHost || !logoDoorway) {
-    console.warn('[mascot-follow] mascotGuide or logoDoorway not found');
-    return;
-  }
+  const observer = new IntersectionObserver((entries) => {
+    const anyVisible = entries.some(e => e.isIntersecting);
 
-  let revealed = false;
-  let gliding = false;
-  let currentX = 0;
-  let currentY = 0;
-  let targetX = 0;
-  let targetY = 0;
-
-  function lerp(start, end, t) {
-    return start + (end - start) * t;
-  }
-
-  function getLogoCenter() {
-    const rect = logoDoorway.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
-    };
-  }
-
-  function firstMove(e) {
-    if (revealed) return;
-    revealed = true;
-
-    // Position near cursor
-    const offsetX = 40;
-    const offsetY = 40;
-    currentX = e.clientX + offsetX;
-    currentY = e.clientY - offsetY;
-
-    mascotHost.style.left = currentX + 'px';
-    mascotHost.style.top = currentY + 'px';
-    mascotHost.style.opacity = '1';
-    mascotHost.style.pointerEvents = 'auto';
-
-    console.log('[mascot-follow] revealed near cursor');
-
-    // After 800ms, start gliding to logo
-    setTimeout(() => {
-      gliding = true;
-      const logoCenter = getLogoCenter();
-      targetX = logoCenter.x + 80; // Float to the right of logo
-      targetY = logoCenter.y - 100; // Float above logo
-      glideToLogo();
-    }, 800);
-
-    // Remove listener after first use
-    window.removeEventListener('mousemove', firstMove);
-  }
-
-  function glideToLogo() {
-    if (!gliding) return;
-
-    const dx = targetX - currentX;
-    const dy = targetY - currentY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < 1) {
-      // Arrived at target
-      mascotHost.style.left = targetX + 'px';
-      mascotHost.style.top = targetY + 'px';
-      gliding = false;
-      console.log('[mascot-follow] arrived at logo position');
-      return;
+    if (anyVisible) {
+      AudioWeb.startAmbient();
+    } else {
+      AudioWeb.stopAmbient();
     }
+  }, { threshold: 0.3 });
 
-    // Lerp with 0.08 smoothing factor
-    currentX = lerp(currentX, targetX, 0.08);
-    currentY = lerp(currentY, targetY, 0.08);
+  sections.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) observer.observe(el);
+  });
 
-    mascotHost.style.left = currentX + 'px';
-    mascotHost.style.top = currentY + 'px';
-
-    requestAnimationFrame(glideToLogo);
-  }
-
-  // Attach mousemove listener for first reveal
-  window.addEventListener('mousemove', firstMove, { passive: true });
-
-  console.log('[mascot-follow] cursor following initialized');
+  console.log('[wonderworks-ambient] IntersectionObserver attached');
 }

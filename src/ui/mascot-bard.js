@@ -48,9 +48,32 @@ function pulse(el){
 }
 
 function posBubbleNear(b, rect){
-  const x = Math.min(Math.max(rect.right, 16), window.innerWidth - 16);
-  const y = Math.max(rect.top - 12, 12);
-  b.style.left = `${x}px`; b.style.top = `${y}px`;
+  let x = Math.min(Math.max(rect.right, 16), window.innerWidth - 16);
+  let y = Math.max(rect.top - 12, 12);
+
+  // Check navbar collision (safe zone = navbar rect + 12px margin)
+  const navbar = document.querySelector('#site-header');
+  if (navbar) {
+    const navRect = navbar.getBoundingClientRect();
+    const safeZone = {
+      top: navRect.top - 12,
+      bottom: navRect.bottom + 12,
+      left: navRect.left - 12,
+      right: navRect.right + 12
+    };
+
+    // If bubble would overlap navbar, nudge it down
+    if (y < safeZone.bottom && x > safeZone.left && x < safeZone.right) {
+      y = safeZone.bottom;
+    }
+  }
+
+  // Keep away from viewport edges
+  const bubbleHeight = 200; // estimate
+  y = Math.min(y, window.innerHeight - bubbleHeight - 16);
+
+  b.style.left = `${x}px`;
+  b.style.top = `${y}px`;
 }
 
 function inView(el){
@@ -69,7 +92,6 @@ export function initMascotBard({
   idleAfterMs=7000,
   betweenIdleMs=14000,
   idleLines = [],
-  poiPingSfx = null,
   onCTA = null
 }={}){
   const host = document.getElementById(containerId);
@@ -134,7 +156,6 @@ export function initMascotBard({
       if(!p.el.offsetParent || !inView(p.el)) continue;
       pulse(p.el);
       if(!RM){ anim.goToAndPlay(0,true); }
-      if(poiPingSfx){ try{ new Audio(poiPingSfx).play(); }catch{} }
       const rect = p.el.getBoundingClientRect();
       showBubbleAt(rect, p.tip, {id:p.id, label:'Okay'});
       const done = ()=>{ setSeen(p.id); hide(); };
