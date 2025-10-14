@@ -182,8 +182,8 @@
     </main>
   </div>
 
-  <!-- Global Mascot (visible on all pages) -->
-  <div id="mascotGuide" style="position:fixed; bottom:120px; right:40px; width:140px; height:140px; z-index:40; opacity:1; pointer-events:auto; transition:opacity 0.3s ease;"></div>
+  <!-- Global Mascot (visible on all pages, sits on audio bar edge) -->
+  <div id="mascotGuide" role="button" tabindex="0" aria-label="Guide wizard - click for hints" style="position:fixed; bottom:calc(64px - 1px); right:12px; width:140px; height:140px; z-index:901; opacity:1; pointer-events:auto; transition:opacity 0.3s ease; cursor:pointer;"></div>
 
   <!-- Lottie Player -->
   <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>

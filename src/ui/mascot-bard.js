@@ -48,8 +48,9 @@ function pulse(el){
 }
 
 function posBubbleNear(b, rect){
-  let x = Math.min(Math.max(rect.right, 16), window.innerWidth - 16);
-  let y = Math.max(rect.top - 12, 12);
+  // Anchor bubble to the mascot position (comic-style, pointing down to mascot)
+  let x = rect.left + (rect.width / 2);
+  let y = rect.top - 12;
 
   // Check navbar collision (safe zone = navbar rect + 12px margin)
   const navbar = document.querySelector('#site-header');
@@ -70,10 +71,13 @@ function posBubbleNear(b, rect){
 
   // Keep away from viewport edges
   const bubbleHeight = 200; // estimate
-  y = Math.min(y, window.innerHeight - bubbleHeight - 16);
+  const bubbleWidth = 340; // max-width from bubble styles
+  y = Math.max(bubbleHeight + 16, y); // Don't go off top
+  x = Math.min(Math.max(bubbleWidth/2 + 16, x), window.innerWidth - bubbleWidth/2 - 16);
 
   b.style.left = `${x}px`;
   b.style.top = `${y}px`;
+  b.style.transform = 'translate(-50%, -100%)'; // Center bubble above mascot
 }
 
 function inView(el){
@@ -122,8 +126,83 @@ export function initMascotBard({
   const seen = getSeen();
 
   let idleTimer=null, cooling=false, destroyed=false, idleIndex=0;
+  let fadeTimer=null; // For idle fade behavior
+
+  // Idle fade: mascot fades to 0.25 after 2s of no activity
+  function armFadeTimer() {
+    clearTimeout(fadeTimer);
+    host.style.opacity = '1';
+    fadeTimer = setTimeout(() => {
+      if (!host.classList.contains('is-speaking')) {
+        host.style.opacity = '0.25';
+      }
+    }, 2000);
+  }
+
+  function showMascot() {
+    clearTimeout(fadeTimer);
+    host.style.opacity = '1';
+  }
+
+  // Track pointer near audio bar (within 64px)
+  const audioBar = document.getElementById('audio-controls');
+  document.addEventListener('pointermove', (e) => {
+    if (!audioBar) return;
+    const barRect = audioBar.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+
+    const nearBar = (
+      e.clientY > barRect.top - 64 &&
+      e.clientY < barRect.bottom + 64 &&
+      e.clientX > barRect.left - 64 &&
+      e.clientX < barRect.right + 64
+    );
+
+    const nearMascot = (
+      e.clientY > hostRect.top - 64 &&
+      e.clientY < hostRect.bottom + 64 &&
+      e.clientX > hostRect.left - 64 &&
+      e.clientX < hostRect.right + 64
+    );
+
+    if (nearBar || nearMascot) {
+      showMascot();
+      armFadeTimer();
+    }
+  }, { passive: true });
+
+  // One-shot wave on click
+  host.addEventListener('click', () => {
+    if (!RM) {
+      anim.goToAndStop(0, true); // Reset to start
+      anim.play(); // Play once (loop is false)
+    }
+    showMascot();
+    const rect = host.getBoundingClientRect();
+    showBubbleAt(rect, '✨ Hello there!', null);
+    setTimeout(hide, 2200);
+  });
+
+  // Keyboard support (Enter/Space)
+  host.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!RM) {
+        anim.goToAndStop(0, true);
+        anim.play();
+      }
+      showMascot();
+      const rect = host.getBoundingClientRect();
+      showBubbleAt(rect, '✨ Hello there!', null);
+      setTimeout(hide, 2200);
+    }
+  });
+
+  armFadeTimer();
 
   function showBubbleAt(rect, text, cta){
+    host.classList.add('is-speaking');
+    showMascot(); // Keep mascot visible while speaking
     textEl.textContent = text;
     ctaEl.innerHTML = '';
     if(cta){
@@ -141,7 +220,12 @@ export function initMascotBard({
     bubble.style.opacity='1';
   }
 
-  function hide(){ bubble.style.opacity='0'; bubble.style.pointerEvents='none'; }
+  function hide(){
+    bubble.style.opacity='0';
+    bubble.style.pointerEvents='none';
+    host.classList.remove('is-speaking');
+    armFadeTimer(); // Restart fade timer after bubble closes
+  }
 
   function nextIdleLine(){
     if(!idleLines.length) return null;
@@ -194,10 +278,22 @@ export function initMascotBard({
   });
   scheduleIdle();
 
+  // Home page nudge: show "Click the logo ✨" after 2s if on home page
+  const homeLogo = document.querySelector('.logo-home, #logoDoorway');
+  if (homeLogo && oncePerSession('home-logo-nudge')) {
+    setTimeout(() => {
+      if (destroyed) return;
+      const rect = host.getBoundingClientRect();
+      showBubbleAt(rect, 'Click the logo ✨', null);
+      setTimeout(hide, 2200);
+    }, 2000);
+  }
+
   return ()=>{
     destroyed = true;
     anim?.destroy();
     bubble.remove();
     if(idleTimer) clearTimeout(idleTimer);
+    if(fadeTimer) clearTimeout(fadeTimer);
   };
 }

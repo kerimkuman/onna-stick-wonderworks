@@ -393,3 +393,28 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 /* Carousel styles consolidated: wheel scrolling is now JS-only (carousel.js) */
 /* Header fade behavior controlled by body.in-carousel + .show-on-hover (lines 13-14) */
 
+/* ==================== HOME LOGO HOVER EFFECT ==================== */
+#logoDoorway {
+  transition: transform 0.22s ease, filter 0.22s ease;
+  transform-origin: center;
+}
+
+#logoDoorway:hover {
+  transform: translateY(-3px) scale(1.03);
+  filter: drop-shadow(0 0 16px rgba(255, 240, 180, 0.4)) brightness(1.08);
+}
+
+#logoDoorway:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #logoDoorway {
+    transition: none;
+  }
+  #logoDoorway:hover {
+    transform: none;
+    filter: brightness(1.05);
+  }
+}
+
