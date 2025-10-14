@@ -83,16 +83,17 @@ export function initTerminal(){
   // Terminal mute button - toggles SFX ONLY (NOT music)
   if (muteBtn) {
     // Import audio module for SFX toggle
-    import('./audio.js').then(Audio => {
+    import('./audio-web.js').then(AudioWeb => {
       muteBtn.addEventListener('click', () => {
-        const enabled = Audio.toggleSfxEnabled();
-        muteBtn.textContent = enabled ? '🔊' : '🔇';
-        muteBtn.setAttribute('aria-label', enabled ? 'Mute SFX' : 'Unmute SFX');
-        console.log('[terminal] SFX', enabled ? 'enabled' : 'disabled');
+        const isMuted = AudioWeb.toggleSfxMute();
+        muteBtn.textContent = isMuted ? '🔇' : '🔊';
+        muteBtn.setAttribute('aria-label', isMuted ? 'Unmute SFX' : 'Mute SFX');
+        console.log('[terminal] SFX', isMuted ? 'muted' : 'enabled');
       });
 
       // Set initial state
-      muteBtn.textContent = Audio.audioState.sfxEnabled ? '🔊' : '🔇';
+      const state = AudioWeb.getState();
+      muteBtn.textContent = state.mutes.sfx ? '🔇' : '🔊';
     });
   }
 
