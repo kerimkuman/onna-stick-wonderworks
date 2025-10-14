@@ -6,7 +6,7 @@
 export function initPageSetup() {
   const homeContainer = document.getElementById('home-container');
   const siteContainer = document.getElementById('site-container');
-  const enterBtn = document.getElementById('enter-site-btn');
+  const logoDoorway = document.getElementById('logoDoorway');
   const backToHomeBtn = document.getElementById('back-to-home');
 
   // Set current year in footers
@@ -16,9 +16,9 @@ export function initPageSetup() {
     span.textContent = currentYear;
   });
 
-  // Handle enter site button
-  if (enterBtn) {
-    enterBtn.addEventListener('click', () => {
+  // Handle logo doorway button
+  if (logoDoorway) {
+    logoDoorway.addEventListener('click', () => {
       enterSite();
     });
   }
