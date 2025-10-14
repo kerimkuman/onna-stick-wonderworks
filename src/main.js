@@ -80,8 +80,8 @@ async function init() {
       poiPingSfx: '/assets/sfx-logo-hover.mp3',
       onCTA: (id) => {
         if (id === 'doorway') {
-          const enterBtn = document.getElementById('enter-site-btn');
-          if (enterBtn) enterBtn.click();
+          const logoDoorway = document.getElementById('logoDoorway');
+          if (logoDoorway) logoDoorway.click();
         }
         if (id === 'faq' || id === 'faq-link') {
           document.querySelector('#faq')?.scrollIntoView({behavior:'smooth'});
@@ -103,6 +103,9 @@ async function init() {
       },
       idleLines: IDLE_COPY.HOME
     });
+
+    // Initialize mascot cursor following on home page
+    setupMascotCursorFollow();
 
     console.log('[main] mascot bard initialized');
   } catch (error) {
@@ -298,43 +301,47 @@ function updateTrackInfo() {
 // ==================== HOMEPAGE DOORWAY SFX ====================
 
 function setupHomepageSfx() {
-  // Find the enter button hotspot on homepage
-  const enterBtn = document.getElementById('enter-site-btn');
-  if (!enterBtn) {
-    console.warn('[homepage-sfx] enter-site-btn not found');
+  // Find the logo doorway button on homepage
+  const logoDoorway = document.getElementById('logoDoorway');
+  if (!logoDoorway) {
+    console.warn('[homepage-sfx] logoDoorway not found');
     return;
   }
 
-  // HOVER START: Loop hover SFX
-  enterBtn.addEventListener('mouseenter', () => {
-    Audio.startDoorwayHover();
-  });
+  // Detect touch devices (skip hover loops on touch)
+  const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
-  enterBtn.addEventListener('focus', () => {
-    Audio.startDoorwayHover();
-  });
+  if (!isTouch) {
+    // DESKTOP ONLY: Hover loop with fades
+    logoDoorway.addEventListener('mouseenter', () => {
+      Audio.startDoorwayHover();
+    });
 
-  // HOVER END: Stop hover loop immediately
-  enterBtn.addEventListener('mouseleave', () => {
-    Audio.stopDoorwayHover();
-  });
+    logoDoorway.addEventListener('focus', () => {
+      Audio.startDoorwayHover();
+    });
 
-  enterBtn.addEventListener('blur', () => {
-    Audio.stopDoorwayHover();
-  });
+    logoDoorway.addEventListener('mouseleave', () => {
+      Audio.stopDoorwayHover();
+    });
 
-  // CLICK: Stop hover, play click once (NO OVERLAP)
-  enterBtn.addEventListener('click', () => {
+    logoDoorway.addEventListener('blur', () => {
+      Audio.stopDoorwayHover();
+    });
+  }
+
+  // CLICK: Stop hover, play click once (NO OVERLAP) - ALL DEVICES
+  logoDoorway.addEventListener('click', () => {
     Audio.playDoorwayClick();
   });
 
   // Keyboard activation (Enter/Space)
-  enterBtn.addEventListener('keydown', (e) => {
+  logoDoorway.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       Audio.playDoorwayClick();
       // Trigger the actual navigation
-      enterBtn.click();
+      logoDoorway.click();
     }
   });
 
@@ -349,5 +356,97 @@ function setupHomepageSfx() {
     Audio.cleanupDoorwaySfx();
   });
 
-  console.log('[homepage-sfx] doorway hover loop + click wired (NO OVERLAP)');
+  console.log(`[homepage-sfx] doorway SFX wired (touch: ${isTouch}, hover: ${!isTouch})`);
+}
+
+// ==================== MASCOT CURSOR FOLLOWING ====================
+
+function setupMascotCursorFollow() {
+  const mascotHost = document.getElementById('mascotGuide');
+  const logoDoorway = document.getElementById('logoDoorway');
+
+  if (!mascotHost || !logoDoorway) {
+    console.warn('[mascot-follow] mascotGuide or logoDoorway not found');
+    return;
+  }
+
+  let revealed = false;
+  let gliding = false;
+  let currentX = 0;
+  let currentY = 0;
+  let targetX = 0;
+  let targetY = 0;
+
+  function lerp(start, end, t) {
+    return start + (end - start) * t;
+  }
+
+  function getLogoCenter() {
+    const rect = logoDoorway.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+  }
+
+  function firstMove(e) {
+    if (revealed) return;
+    revealed = true;
+
+    // Position near cursor
+    const offsetX = 40;
+    const offsetY = 40;
+    currentX = e.clientX + offsetX;
+    currentY = e.clientY - offsetY;
+
+    mascotHost.style.left = currentX + 'px';
+    mascotHost.style.top = currentY + 'px';
+    mascotHost.style.opacity = '1';
+    mascotHost.style.pointerEvents = 'auto';
+
+    console.log('[mascot-follow] revealed near cursor');
+
+    // After 800ms, start gliding to logo
+    setTimeout(() => {
+      gliding = true;
+      const logoCenter = getLogoCenter();
+      targetX = logoCenter.x + 80; // Float to the right of logo
+      targetY = logoCenter.y - 100; // Float above logo
+      glideToLogo();
+    }, 800);
+
+    // Remove listener after first use
+    window.removeEventListener('mousemove', firstMove);
+  }
+
+  function glideToLogo() {
+    if (!gliding) return;
+
+    const dx = targetX - currentX;
+    const dy = targetY - currentY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < 1) {
+      // Arrived at target
+      mascotHost.style.left = targetX + 'px';
+      mascotHost.style.top = targetY + 'px';
+      gliding = false;
+      console.log('[mascot-follow] arrived at logo position');
+      return;
+    }
+
+    // Lerp with 0.08 smoothing factor
+    currentX = lerp(currentX, targetX, 0.08);
+    currentY = lerp(currentY, targetY, 0.08);
+
+    mascotHost.style.left = currentX + 'px';
+    mascotHost.style.top = currentY + 'px';
+
+    requestAnimationFrame(glideToLogo);
+  }
+
+  // Attach mousemove listener for first reveal
+  window.addEventListener('mousemove', firstMove, { passive: true });
+
+  console.log('[mascot-follow] cursor following initialized');
 }

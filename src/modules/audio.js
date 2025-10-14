@@ -6,7 +6,50 @@
  * - Quadratic volume curve for natural loudness
  * - Continuity: resumes from last position
  * - SFX: homepage hover/click only
+ * - Graceful fades for all audio transitions
  */
+
+// ==================== FADE UTILITIES ====================
+
+function now(){ return performance.now(); }
+
+function fadeTo(el, target, dur=350) {
+  if (!el) return Promise.resolve();
+  const startVol = el.volume;
+  const endVol = Math.max(0, Math.min(1, target));
+  if (dur <= 0 || startVol === endVol) { el.volume = endVol; return Promise.resolve(); }
+  let start = now(), raf;
+  return new Promise(res=>{
+    const tick = () => {
+      const t = Math.min(1, (now()-start)/dur);
+      const k = t*t*(3-2*t); // smoothstep
+      el.volume = startVol + (endVol - startVol) * k;
+      if (t < 1) raf = requestAnimationFrame(tick); else res();
+    };
+    raf = requestAnimationFrame(tick);
+  });
+}
+
+async function fadeIn(el, finalVol, dur=350) {
+  if (!el) return;
+  const wasPaused = el.paused;
+  const target = Math.max(0, Math.min(1, finalVol));
+  el.volume = 0;
+  if (wasPaused) { try { await el.play(); } catch {} }
+  await fadeTo(el, target, dur);
+}
+
+async function fadeOutPause(el, dur=250) {
+  if (!el) return;
+  await fadeTo(el, 0, dur);
+  el.pause();
+}
+
+async function fadeOutStop(el, dur=250) {
+  if (!el) return;
+  await fadeTo(el, 0, dur);
+  el.pause(); el.currentTime = 0;
+}
 
 // ==================== STATE ====================
 
@@ -215,16 +258,17 @@ function attachUnlockOnce() {
 // ==================== ROUTING AWARENESS ====================
 
 /**
- * Check if we're currently viewing a wonderworks section
+ * Check if we're currently viewing home or wonderworks sections
  */
 function isOnWonderworksSection() {
-  // Check if wonderworks sections are in viewport
+  // Check if home or wonderworks sections are in viewport
+  const homeDoor = document.querySelector('#home-door');
   const wonderworksIntro = document.querySelector('#wonderworks-intro');
   const wonderworksWrapper = document.querySelector('#wonderworks-wrapper');
 
-  if (!wonderworksIntro && !wonderworksWrapper) return false;
+  if (!homeDoor && !wonderworksIntro && !wonderworksWrapper) return false;
 
-  // Check if either section is at least 30% visible
+  // Check if any section is at least 30% visible
   const isVisible = (el) => {
     if (!el) return false;
     const rect = el.getBoundingClientRect();
@@ -233,21 +277,21 @@ function isOnWonderworksSection() {
     return (visible / vh) > 0.3;
   };
 
-  return isVisible(wonderworksIntro) || isVisible(wonderworksWrapper);
+  return isVisible(homeDoor) || isVisible(wonderworksIntro) || isVisible(wonderworksWrapper);
 }
 
 /**
- * Setup intersection observer to play/pause ambient based on wonderworks visibility
+ * Setup intersection observer to play/pause ambient based on section visibility
  *
- * CRITICAL: Ambient is ONLY for Wonderworks landing page (video background sections).
+ * CRITICAL: Ambient is for Home + Wonderworks sections (video background sections).
  * NOT controlled by carousel or any other module - purely page/route-based.
  *
- * Watches: #wonderworks-intro and #wonderworks-wrapper
+ * Watches: #home-door, #wonderworks-intro, #wonderworks-wrapper
  * When 30%+ visible → plays ambient cauldron loop
  * When not visible → pauses ambient (saves time for resume)
  */
 export function setupAmbientRouting() {
-  const sections = ['#wonderworks-intro', '#wonderworks-wrapper'];
+  const sections = ['#home-door', '#wonderworks-intro', '#wonderworks-wrapper'];
   let anyVisible = false;
 
   const observer = new IntersectionObserver((entries) => {
@@ -265,10 +309,15 @@ export function setupAmbientRouting() {
     if (el) observer.observe(el);
   });
 
-  console.log('[audio] ambient routing: Wonderworks-only (NOT carousel-controlled)');
+  console.log('[audio] ambient routing: Home + Wonderworks (NOT carousel-controlled)');
 }
 
 // ==================== BGM CONTROLS ====================
+
+function bgmTargetVol() {
+  const sliderVal = parseFloat(localStorage.getItem(LS.mVol) ?? '0.5');
+  return sliderToVolume(sliderVal);
+}
 
 export async function playBGM() {
   if (!bgmAudio) return;
@@ -276,45 +325,71 @@ export async function playBGM() {
 
   try {
     bgmPaused = false;
-    await bgmAudio.play();
+    await fadeIn(bgmAudio, bgmTargetVol(), 400);
     persistState();
   } catch (e) {
     console.warn('[audio] play blocked:', e.message);
   }
 }
 
-export function pauseBGM() {
+export async function pauseBGM() {
   if (!bgmAudio) return;
   bgmPaused = true;
-  bgmAudio.pause();
+  await fadeOutPause(bgmAudio, 220);
   persistState();
 }
 
-export function stopBGM() {
+export async function stopBGM() {
   if (!bgmAudio) return;
   bgmPaused = true;
-  bgmAudio.pause();
-  bgmAudio.currentTime = 0;
+  await fadeOutStop(bgmAudio, 220);
   persistState();
 }
 
 export async function nextBGM() {
+  if (bgmAudio && !bgmAudio.paused) {
+    await fadeOutPause(bgmAudio, 180);
+  }
   loadBgm(bgmIndex + 1);
   if (!bgmPaused && !isMusicMuted) {
-    await playBGM();
+    await fadeIn(bgmAudio, bgmTargetVol(), 320);
   }
   persistState();
 }
 
 export async function prevBGM() {
+  if (bgmAudio && !bgmAudio.paused) {
+    await fadeOutPause(bgmAudio, 180);
+  }
   loadBgm(bgmIndex - 1);
   if (!bgmPaused && !isMusicMuted) {
-    await playBGM();
+    await fadeIn(bgmAudio, bgmTargetVol(), 320);
   }
   persistState();
 }
 
 // ==================== AMBIENT CONTROLS ====================
+
+function ambientTargetVol() {
+  const sliderVal = parseFloat(localStorage.getItem(LS.aVol) ?? '0.4');
+  return sliderToVolume(sliderVal);
+}
+
+function savedAmbientTime() {
+  try {
+    return parseFloat(localStorage.getItem(LS.aT) ?? '0');
+  } catch {
+    return 0;
+  }
+}
+
+function saveAmbientTime() {
+  try {
+    if (ambientAudio) {
+      localStorage.setItem(LS.aT, String(ambientAudio.currentTime));
+    }
+  } catch {}
+}
 
 export async function playAmbient() {
   if (!ambientAudio) return;
@@ -328,23 +403,28 @@ export async function playAmbient() {
   }
 
   try {
-    await ambientAudio.play();
+    ambientAudio.currentTime = savedAmbientTime();
+  } catch {}
+
+  try {
+    await fadeIn(ambientAudio, ambientTargetVol(), 420);
     persistState();
   } catch (e) {
     console.warn('[audio] ambient play blocked:', e.message);
   }
 }
 
-export function pauseAmbient() {
+export async function pauseAmbient() {
   if (!ambientAudio) return;
-  ambientAudio.pause();
+  saveAmbientTime();
+  await fadeOutPause(ambientAudio, 220);
   persistState();
 }
 
-export function stopAmbient() {
+export async function stopAmbient() {
   if (!ambientAudio) return;
-  ambientAudio.pause();
-  ambientAudio.currentTime = 0;
+  saveAmbientTime();
+  await fadeOutStop(ambientAudio, 220);
   persistState();
 }
 
@@ -352,19 +432,25 @@ export function stopAmbient() {
 
 /**
  * Master toggle for MUSIC channels (BGM + Ambient). SFX is NOT affected.
+ * Uses graceful fades instead of hard mute.
  */
-export function toggleMute() {
+export async function toggleMute() {
   isMusicMuted = !isMusicMuted;
 
-  if (bgmAudio) bgmAudio.muted = isMusicMuted;
-  if (ambientAudio) ambientAudio.muted = isMusicMuted;
-
   if (isMusicMuted) {
-    pauseBGM();
-    pauseAmbient();
+    await Promise.all([
+      bgmAudio && !bgmAudio.paused ? fadeOutPause(bgmAudio, 200) : Promise.resolve(),
+      ambientAudio && !ambientAudio.paused ? fadeOutPause(ambientAudio, 200) : Promise.resolve()
+    ]);
   } else {
-    if (!bgmPaused) playBGM();
-    if (ambientEnabled && isOnWonderworksSection()) playAmbient();
+    const promises = [];
+    if (bgmAudio && !bgmPaused) {
+      promises.push(fadeIn(bgmAudio, bgmTargetVol(), 280));
+    }
+    if (ambientEnabled && isOnWonderworksSection()) {
+      promises.push(playAmbient());
+    }
+    await Promise.all(promises);
   }
 
   console.log(`[audio] music ${isMusicMuted ? 'muted' : 'unmuted'}`);
@@ -462,7 +548,7 @@ export async function preloadHomepageSfx() {
 }
 
 /**
- * HOME DOORWAY HOVER - Start looping hover SFX
+ * HOME DOORWAY HOVER - Start looping hover SFX with fade in
  * Resets to 0 and plays from beginning each time
  */
 export async function startDoorwayHover() {
@@ -470,9 +556,8 @@ export async function startDoorwayHover() {
   if (!hoverLoopAudio) return;
 
   try {
-    // Reset to beginning and play
     hoverLoopAudio.currentTime = 0;
-    await hoverLoopAudio.play();
+    await fadeIn(hoverLoopAudio, 0.8, 160);
     isHoverLoopPlaying = true;
   } catch (e) {
     // Ignore autoplay blocks
@@ -480,13 +565,12 @@ export async function startDoorwayHover() {
 }
 
 /**
- * HOME DOORWAY HOVER END - Stop hover loop immediately
+ * HOME DOORWAY HOVER END - Stop hover loop with fade out
  */
-export function stopDoorwayHover() {
+export async function stopDoorwayHover() {
   if (!hoverLoopAudio) return;
 
-  hoverLoopAudio.pause();
-  hoverLoopAudio.currentTime = 0;
+  await fadeOutStop(hoverLoopAudio, 140);
   isHoverLoopPlaying = false;
 }
 
