@@ -75,6 +75,30 @@ export function initCarousel() {
     if (delta > minSnapDelta) {
       scroller.scrollTo({ left: targetLeft, behavior: 'smooth' });
     }
+    saveCurrentIndex();
+  }
+
+  // Save current slide index to sessionStorage
+  function saveCurrentIndex() {
+    try {
+      const w = slideW();
+      const currentIndex = Math.round(scroller.scrollLeft / w);
+      sessionStorage.setItem('carousel.currentSlide', String(currentIndex));
+    } catch {}
+  }
+
+  // Restore last viewed slide from sessionStorage
+  function restorePosition() {
+    try {
+      const saved = sessionStorage.getItem('carousel.currentSlide');
+      if (saved !== null) {
+        const index = parseInt(saved, 10);
+        if (!isNaN(index) && index >= 0 && index < ORDER.length) {
+          const targetLeft = index * slideW();
+          scroller.scrollTo({ left: targetLeft, behavior: 'auto' });
+        }
+      }
+    } catch {}
   }
 
   // Wheel handler with edge pass-through
@@ -105,8 +129,26 @@ export function initCarousel() {
     kick();
   }
 
-  // Keyboard support (~80% viewport width)
+  // Keyboard support (Arrow keys + Home/End)
   function onKey(e) {
+    // Home: jump to first slide
+    if (e.key === 'Home') {
+      e.preventDefault();
+      scroller.scrollTo({ left: 0, behavior: 'smooth' });
+      saveCurrentIndex();
+      return;
+    }
+
+    // End: jump to last slide
+    if (e.key === 'End') {
+      e.preventDefault();
+      const lastSlideLeft = (ORDER.length - 1) * slideW();
+      scroller.scrollTo({ left: lastSlideLeft, behavior: 'smooth' });
+      saveCurrentIndex();
+      return;
+    }
+
+    // Arrow keys: ~80% viewport width
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     const dir = e.key === 'ArrowRight' ? 1 : -1;
 
@@ -132,7 +174,10 @@ export function initCarousel() {
   scroller.addEventListener('scroll', () => {
     if (vx !== 0) return; // momentum in progress
     clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => maybeSnap(true), 140);
+    snapTimer = setTimeout(() => {
+      maybeSnap(true);
+      saveCurrentIndex();
+    }, 140);
   }, { passive: true });
 
   // Mark body for CSS styling
@@ -151,6 +196,12 @@ export function initCarousel() {
   // Enforce slide order
   enforceOrder(scroller);
 
+  // Add ARIA labels for accessibility
+  addAccessibilityLabels(scroller);
+
+  // Restore previous position from sessionStorage
+  restorePosition();
+
   // Setup header fade/show behavior
   setupHeaderFade();
 
@@ -160,7 +211,9 @@ export function initCarousel() {
   // Console logs for verification
   console.log('[carousel] order enforced:', ORDER);
   console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
-  console.log('[carousel] keyboard arrows ready');
+  console.log('[carousel] keyboard: arrows, Home, End');
+  console.log('[carousel] persistence: sessionStorage');
+  console.log('[carousel] a11y: ARIA labels added');
   console.log('[carousel] header fade/show-on-hover ready');
   console.log('[carousel] initialized:', scroller);
 }
@@ -196,6 +249,19 @@ function enforceOrder(scroller) {
   });
   kids.sort((a, b) => (rank.get(a.key) ?? 999) - (rank.get(b.key) ?? 999));
   kids.forEach(({ el }) => scroller.appendChild(el));
+}
+
+function addAccessibilityLabels(scroller) {
+  // Container already has role="region" and aria-label in HTML
+  // Add slide-specific ARIA labels
+  const slides = scroller.querySelectorAll('.ww-slide');
+  const total = slides.length;
+
+  slides.forEach((slide, index) => {
+    slide.setAttribute('role', 'group');
+    slide.setAttribute('aria-roledescription', 'slide');
+    slide.setAttribute('aria-label', `Slide ${index + 1} of ${total}`);
+  });
 }
 
 function setupHeaderFade() {

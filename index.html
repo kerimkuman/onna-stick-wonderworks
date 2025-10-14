@@ -24,7 +24,7 @@
       <video autoplay muted loop playsinline class="bg-video">
         <source src="/assets/home-background.mp4" type="video/mp4">
       </video>
-      <button class="enter-hotspot" id="enter-site-btn" aria-label="Enter the main site"></button>
+      <button class="enter-hotspot" id="enter-site-btn" aria-label="Enter the main site" data-poi data-poi-id="doorway" data-poi-tip="Through here lie improbable bargains and entirely probable consequences." data-poi-priority="1"></button>
     </section>
 
     <section id="home-footer" class="site-footer">
@@ -51,7 +51,7 @@
         <ul class="header-nav">
           <li><a href="#wonderworks-intro">Wonderworks</a></li>
           <li><a href="#contact">Contact</a></li>
-          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#faq" data-poi data-poi-id="faq-link" data-poi-tip="Our FAQ knows answers and questions. Very nosy." data-poi-priority="3">FAQ</a></li>
         </ul>
       </div>
     </header>
@@ -86,7 +86,7 @@
       </section>
 
       <section id="wonderworks-wrapper">
-        <div class="wonderworks-scroller" role="region" aria-label="Portfolio gallery" tabindex="0">
+        <div class="wonderworks-scroller" role="region" aria-label="Portfolio gallery" tabindex="0" data-poi data-poi-id="carousel" data-poi-tip="Wheel your mouse sideways—yes, really. The slides obey." data-poi-priority="2">
           <div class="ww-slide" id="be-seen-on-every-screen"><video autoplay muted playsinline loop class="slide-media"><source src="/assets/be-seen-on-every-screen-ad.mp4" type="video/mp4"></video><div class="slide-caption">Video editing · Motion graphics</div></div>
           <div class="ww-slide" id="build-your-legacy"><video autoplay muted playsinline loop class="slide-media"><source src="/assets/build-your-legacy-ad.mp4" type="video/mp4"></video><div class="slide-caption">Motion graphics · Branding</div></div>
           <div class="ww-slide" id="onna-stick-construction"><img src="/assets/onna-stick-construction-logo-branding.jpg" alt="Construction branding" class="slide-media"><div class="slide-caption">Logo & identity · Trades</div></div>
@@ -178,6 +178,12 @@
       </section>
     </main>
   </div>
+
+  <!-- Mascot Guide Container -->
+  <div id="mascotGuide" style="position:fixed; right:24px; bottom:24px; width:140px; height:140px; z-index:30"></div>
+
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 
   <script type="module" src="/src/main.js"></script>
 </body>
