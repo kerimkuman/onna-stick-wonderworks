@@ -61,7 +61,7 @@ export function initPageSetup() {
   function enterSite(targetSectionId = null) {
     if (homeContainer && siteContainer) {
       homeContainer.classList.add('hidden');
-      siteContainer.classList.add('visible');
+      siteContainer.classList.add('active');
 
       // If a specific section was requested, scroll to it after transition
       if (targetSectionId) {
@@ -78,7 +78,7 @@ export function initPageSetup() {
   function returnHome() {
     if (homeContainer && siteContainer) {
       homeContainer.classList.remove('hidden');
-      siteContainer.classList.remove('visible');
+      siteContainer.classList.remove('active');
       
       // Scroll main content back to top
       const mainContent = document.getElementById('main-content');
