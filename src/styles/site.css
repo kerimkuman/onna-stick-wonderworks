@@ -382,7 +382,27 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
     max-height: calc(100dvh - 98px);
   }
 }
-.slide-caption { position: absolute; bottom: 1.5rem; left: 1.5rem; background: rgba(0,0,0,.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding: .75rem 1.5rem; border-radius: 999px; font-size: .875rem; color: #e2e8f0; z-index: 10; }
+.slide-caption {
+  position: absolute;
+  bottom: calc(var(--hud-height-desktop) + 1rem);
+  left: 1.5rem;
+  background: rgba(0,0,0,.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .slide-caption {
+    bottom: calc(var(--hud-height-mobile) + 0.75rem);
+    font-size: 0.7rem;
+    padding: 0.4rem 0.85rem;
+  }
+}
 /* Carousel slide indicators - ONLY show in carousel */
 .carousel-indicators {
   position: fixed;
