@@ -614,9 +614,9 @@ body.in-carousel .carousel-indicators {
   opacity: 1;
   animation: glowPulseSmooth 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   box-shadow:
-    0 0 20px 0px rgba(147, 112, 219, 1),
-    0 0 40px 0px rgba(199, 21, 133, 0.8),
-    0 0 60px 0px rgba(138, 182, 255, 0.6);
+    0 0 20px 3px rgba(147, 112, 219, 1),
+    0 0 40px 5px rgba(199, 21, 133, 0.85),
+    0 0 60px 7px rgba(138, 182, 255, 0.65);
 }
 
 #logoDoorway:hover {
