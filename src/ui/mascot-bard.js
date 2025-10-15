@@ -286,7 +286,8 @@ export function initMascotBard({
 
   function tick(){
     if(destroyed || cooling) return;
-    if(tryPOI()) { cool(); return; }
+    // DISABLED: POI auto-show - mascot only speaks when clicked now
+    // if(tryPOI()) { cool(); return; }
     if(tryIdle()) { cool(); return; }
   }
 

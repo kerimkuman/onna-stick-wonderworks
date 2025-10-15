@@ -56,8 +56,14 @@ export function initCarousel() {
   // Helper: update current slide index based on scroll position
   function updateCurrentSlide() {
     const slideWidth = getSlideWidth();
-    const newSlide = Math.round(scroller.scrollLeft / slideWidth);
-    if (newSlide !== currentSlide) {
+    const scrollLeft = scroller.scrollLeft;
+    const newSlide = Math.round(scrollLeft / slideWidth);
+
+    // Only update if actually changed AND scroll is near a snap point
+    const snapOffset = Math.abs((scrollLeft % slideWidth) - slideWidth) < 50 ||
+                       Math.abs(scrollLeft % slideWidth) < 50;
+
+    if (newSlide !== currentSlide && snapOffset) {
       currentSlide = newSlide;
       updateIndicators(currentSlide);
       saveCurrentIndex(currentSlide);
@@ -99,12 +105,22 @@ export function initCarousel() {
     });
   }
 
-  // Wheel handler - simple one-slide-at-a-time
+  // Debounce wheel events for smoother scrolling
+  let wheelTimeout;
+  let isScrolling = false;
+
+  // Wheel handler - simple one-slide-at-a-time with debounce
   function onWheel(e) {
     const delta = e.deltaY || e.deltaX;
 
     // Ignore tiny movements (trackpad jitter)
-    if (Math.abs(delta) < 5) return;
+    if (Math.abs(delta) < 10) return;
+
+    // If already scrolling, ignore new wheel events for smoothness
+    if (isScrolling) {
+      e.preventDefault();
+      return;
+    }
 
     // Determine direction
     const direction = delta > 0 ? 1 : -1;
@@ -119,8 +135,15 @@ export function initCarousel() {
     // Prevent default and scroll to next/prev slide
     e.preventDefault();
     if (targetSlide !== currentSlide) {
-      scrollToSlide(targetSlide, true);
+      isScrolling = true;
       currentSlide = targetSlide;
+      scrollToSlide(targetSlide, true);
+
+      // Allow next scroll after animation completes
+      clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 400); // Debounce for smooth scrolling
     }
   }
 

@@ -32,7 +32,7 @@ section { position: relative; height: 100vh; height: 100dvh; scroll-snap-align: 
   left: 0;
   right: 0;
   width: 100%;
-  height: var(--hud-height-desktop);
+  height: 64px; /* Increased from 48px to prevent logo cropping */
   z-index: 1000;
   background: rgba(0, 0, 0, 0.85);
   -webkit-backdrop-filter: blur(12px);
@@ -47,7 +47,7 @@ section { position: relative; height: 100vh; height: 100dvh; scroll-snap-align: 
 
 @media (max-width: 768px) {
   #site-header {
-    height: var(--hud-height-mobile);
+    height: 56px; /* Increased from 42px */
     padding: 0 16px;
   }
 }
@@ -368,13 +368,13 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
 .ww-slide { position: relative; flex: 0 0 100vw; width: 100vw; height: 100%; scroll-snap-align: start; display: grid; place-items: center; background: #000; }
 .slide-media { max-width: 100vw; max-height: calc(100vh - 76px); max-height: calc(100dvh - 76px); object-fit: contain; display: block; }
 .slide-caption { position: absolute; bottom: 1.5rem; left: 1.5rem; background: rgba(0,0,0,.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding: .75rem 1.5rem; border-radius: 999px; font-size: .875rem; color: #e2e8f0; z-index: 10; }
-/* Carousel slide indicators */
+/* Carousel slide indicators - ONLY show in carousel */
 .carousel-indicators {
   position: fixed;
   bottom: calc(var(--hud-height-desktop) + 1.5rem);
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
+  display: none; /* Hidden by default */
   gap: 0.5rem;
   z-index: 920;
   padding: 0.75rem 1.25rem;
@@ -383,6 +383,11 @@ p { color: #cbd5e1; max-width: 65ch; margin: 0 auto; }
   -webkit-backdrop-filter: blur(8px);
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Only show when in carousel section */
+body.in-carousel .carousel-indicators {
+  display: flex;
 }
 
 .carousel-indicators button {
