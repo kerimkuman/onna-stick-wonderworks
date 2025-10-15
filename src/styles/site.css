@@ -532,7 +532,7 @@ body.in-carousel .carousel-indicators {
 /* Carousel styles consolidated: wheel scrolling is now JS-only (carousel.js) */
 /* Header fade behavior controlled by body.in-carousel + .show-on-hover (lines 13-14) */
 
-/* ==================== HOME LOGO: ENLARGED + HOVER EFFECT ==================== */
+/* ==================== HOME LOGO: ENLARGED + HOVER EFFECT + BREATHING ANIMATION ==================== */
 #logoDoorway {
   /* Enlarge: 2.25x desktop (1.5 * 1.5), 1.75x mobile, max 62% of hero height */
   width: 315px !important;  /* 210px * 1.5 = 315px (2.25x original 140px) */
@@ -541,6 +541,18 @@ body.in-carousel .carousel-indicators {
   max-height: 62vh;
   transition: transform 0.22s ease, filter 0.22s ease;
   transform-origin: center;
+  animation: logoBreath 3s ease-in-out infinite;
+}
+
+@keyframes logoBreath {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 12px rgba(255, 240, 180, 0.25)) brightness(1);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 18px rgba(255, 240, 180, 0.4)) brightness(1.05);
+  }
 }
 
 @media (max-width: 768px) {
@@ -551,16 +563,19 @@ body.in-carousel .carousel-indicators {
 }
 
 #logoDoorway:hover {
+  animation: logoBreath 1.5s ease-in-out infinite;
   transform: translateY(-6px) scale(1.05);
-  filter: drop-shadow(0 0 20px rgba(255, 240, 180, 0.5)) brightness(1.1);
+  filter: drop-shadow(0 0 24px rgba(255, 240, 180, 0.6)) brightness(1.1);
 }
 
 #logoDoorway:active {
+  animation: none;
   transform: translateY(-2px) scale(1.02);
 }
 
 @media (prefers-reduced-motion: reduce) {
   #logoDoorway {
+    animation: none;
     transition: none;
   }
   #logoDoorway:hover {

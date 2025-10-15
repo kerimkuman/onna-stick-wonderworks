@@ -59,11 +59,8 @@ export function initCarousel() {
     const scrollLeft = scroller.scrollLeft;
     const newSlide = Math.round(scrollLeft / slideWidth);
 
-    // Only update if actually changed AND scroll is near a snap point
-    const snapOffset = Math.abs((scrollLeft % slideWidth) - slideWidth) < 50 ||
-                       Math.abs(scrollLeft % slideWidth) < 50;
-
-    if (newSlide !== currentSlide && snapOffset) {
+    // Update if slide index changed
+    if (newSlide !== currentSlide) {
       currentSlide = newSlide;
       updateIndicators(currentSlide);
       saveCurrentIndex(currentSlide);
@@ -136,7 +133,6 @@ export function initCarousel() {
     e.preventDefault();
     if (targetSlide !== currentSlide) {
       isScrolling = true;
-      currentSlide = targetSlide;
       scrollToSlide(targetSlide, true);
 
       // Allow next scroll after animation completes
@@ -180,7 +176,7 @@ export function initCarousel() {
   let scrollTimeout;
   scroller.addEventListener('scroll', () => {
     clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(updateCurrentSlide, 100);
+    scrollTimeout = setTimeout(updateCurrentSlide, 50);
   }, { passive: true });
 
   // Attach event listeners
