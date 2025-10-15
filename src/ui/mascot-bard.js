@@ -110,7 +110,7 @@ export function initMascotBard({
   const homeContainer = document.getElementById('home-container');
   const homeDoor = document.getElementById('logoDoorway');
   const isHomeEntryVisible = !!(homeContainer && !homeContainer.classList.contains('hidden') && homeDoor);
-  const HOME_POSITION_OFFSET = 0; // Position directly next to logo
+  const HOME_POSITION_OFFSET = -70; // Overlap logo (negative = closer, overlapping)
   let inHomeMode = false;
   let homeModeCleanup = () => {};
   let homeExitTimer = null;
@@ -154,8 +154,13 @@ export function initMascotBard({
 
     const computed = getComputedStyle(host);
     const fallbackWidth = parseFloat(computed.width) || 0;
+    const fallbackHeight = parseFloat(computed.height) || 0;
     const hostWidth = host.offsetWidth || host.getBoundingClientRect().width || fallbackWidth || 280;
-    const top = rect.top + rect.height / 2;
+    const hostHeight = host.offsetHeight || host.getBoundingClientRect().height || fallbackHeight || 280;
+
+    // Align bottom of mascot with bottom of logo
+    // Since transform uses -50%, top value is the center point
+    const top = rect.bottom - (hostHeight / 2);
     let left = rect.left - HOME_POSITION_OFFSET;
     let translateX = '-100%';
 
