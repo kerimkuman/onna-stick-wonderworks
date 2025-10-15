@@ -355,15 +355,29 @@ function setupHomepageSfx() {
 
 function setupWonderworksAmbient() {
   const sections = ['#wonderworks-intro', '#wonderworks-wrapper'];
+  let debounceTimeout = null;
+  let visibilityState = new Set();
 
   const observer = new IntersectionObserver((entries) => {
-    const anyVisible = entries.some(e => e.isIntersecting);
+    // Track which sections are currently visible
+    entries.forEach(entry => {
+      const id = entry.target.id;
+      if (entry.isIntersecting) {
+        visibilityState.add(id);
+      } else {
+        visibilityState.delete(id);
+      }
+    });
 
-    if (anyVisible) {
-      AudioWeb.startAmbient();
-    } else {
-      AudioWeb.stopAmbient();
-    }
+    // Debounce the audio control to prevent rapid start/stop
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      if (visibilityState.size > 0) {
+        AudioWeb.startAmbient();
+      } else {
+        AudioWeb.stopAmbient();
+      }
+    }, 150);
   }, { threshold: 0.3 });
 
   sections.forEach(sel => {

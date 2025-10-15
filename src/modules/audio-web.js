@@ -31,7 +31,8 @@ const STATE = {
     time: 0,
     playing: false,
     source: null,
-    lastVisit: 0
+    lastVisit: 0,
+    isStarting: false
   },
   volumes: {
     music: 0.25,
@@ -491,7 +492,10 @@ export async function startAmbient() {
   if (!ctx || !unlocked) return;
   if (!STATE.ambientEnabled) return;
   if (STATE.ambient.playing) return;
+  if (STATE.ambient.isStarting) return; // Prevent concurrent calls
   if (STATE.mutes.ambient) return;
+
+  STATE.ambient.isStarting = true;
 
   try {
     // Check if we should resume or restart
@@ -503,6 +507,12 @@ export async function startAmbient() {
     const response = await fetch(AMBIENT_SRC);
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+    // Double-check we didn't start playing while fetching
+    if (STATE.ambient.playing) {
+      STATE.ambient.isStarting = false;
+      return;
+    }
 
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
@@ -539,11 +549,13 @@ export async function startAmbient() {
     console.log('[audio-web] Ambient started');
   } catch (e) {
     console.warn('[audio-web] Ambient start failed:', e);
+  } finally {
+    STATE.ambient.isStarting = false;
   }
 }
 
 export async function stopAmbient() {
-  if (!STATE.ambient.playing) return;
+  if (!STATE.ambient.playing && !STATE.ambient.source) return;
 
   STATE.ambient.playing = false;
   STATE.ambient.lastVisit = Date.now();
@@ -553,14 +565,19 @@ export async function stopAmbient() {
     const now = ctx.currentTime;
     ambientGain.gain.cancelScheduledValues(now);
     ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
-    ambientGain.gain.linearRampToValueAtTime(0, now + 0.6);
+    ambientGain.gain.linearRampToValueAtTime(0, now + 0.4);
+
+    // Stop source immediately (fade happens on gain node)
+    const sourceToStop = STATE.ambient.source;
+    STATE.ambient.source = null;
 
     setTimeout(() => {
-      if (STATE.ambient.source) {
-        STATE.ambient.source.stop();
-        STATE.ambient.source = null;
+      try {
+        sourceToStop.stop();
+      } catch (e) {
+        // Source may have already ended
       }
-    }, 600);
+    }, 400);
   }
 
   console.log('[audio-web] Ambient stopped');

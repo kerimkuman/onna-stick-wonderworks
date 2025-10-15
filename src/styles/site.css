@@ -588,7 +588,11 @@ body.in-carousel .carousel-indicators {
 
 #logoDoorway:hover {
   animation: logoSway 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(255, 215, 100, 0.6)) brightness(1.1);
+  filter:
+    drop-shadow(0 0 16px rgba(147, 112, 219, 0.7))
+    drop-shadow(0 0 24px rgba(199, 21, 133, 0.5))
+    drop-shadow(0 0 30px rgba(138, 182, 255, 0.4))
+    brightness(1.12);
   will-change: transform;
 }
 
