@@ -1,11 +1,10 @@
 /**
  * WONDERWORKS CAROUSEL MODULE
- * Horizontal snap-scrolling carousel with:
- * - Slide order enforcement
- * - Smooth wheel behavior with Shift/Alt modifiers
- * - Keyboard arrow navigation
- * - Edge handoff to page scroll
- * - Header fade/show on hover
+ * Simplified horizontal snap-scrolling carousel with:
+ * - Native smooth scroll-snap behavior
+ * - Wheel and keyboard navigation
+ * - Slide progress indicators
+ * - Header + audio bar fade on hover
  */
 
 const ORDER = [
@@ -27,256 +26,212 @@ export function initCarousel() {
     return;
   }
 
-  // --- Config ---
-  const friction = 0.90;        // momentum decay
-  const baseStep = 55;          // pixels per notch (before modifiers)
-  const slowMul = 0.45;         // Shift = precise
-  const fastMul = 2.5;          // Alt = fast
-  const snapDelay = 140;        // ms after last movement to snap
-  const minSnapDelta = 0.5;     // don't snap if we barely moved
+  // Enforce slide order
+  enforceOrder(scroller);
 
-  let vx = 0;                   // horizontal velocity
-  let raf = 0;
-  let lastWheel = 0;
+  // Add accessibility labels
+  addAccessibilityLabels(scroller);
 
-  // Helper: where are we?
-  const atLeft  = () => scroller.scrollLeft <= 1;
-  const atRight = () => Math.ceil(scroller.scrollLeft + scroller.clientWidth) >= scroller.scrollWidth - 1;
+  // Create slide indicators
+  const indicators = createSlideIndicators(scroller);
 
-  // Helper: one full "slide" width equals the viewport width
-  const slideW = () => scroller.clientWidth;
+  // Mark body for CSS styling
+  document.body.classList.add('in-carousel');
 
-  // Momentum loop
-  function tick() {
-    if (Math.abs(vx) < 0.1) { vx = 0; raf = 0; maybeSnap(); return; }
-    scroller.scrollLeft += vx;
-    vx *= friction;
+  // Enable native scroll-snap for buttery smooth scrolling
+  scroller.style.scrollSnapType = 'x mandatory';
+  scroller.style.scrollBehavior = 'smooth';
 
-    // clamp at edges so page can take over on next wheel
-    if (atLeft() && vx < 0) { vx = 0; raf = 0; maybeSnap(true); return; }
-    if (atRight() && vx > 0) { vx = 0; raf = 0; maybeSnap(true); return; }
+  // Make focusable
+  scroller.tabIndex = 0;
 
-    raf = requestAnimationFrame(tick);
-  }
-  function kick() { if (!raf) raf = requestAnimationFrame(tick); }
+  // Track current slide
+  let currentSlide = 0;
+  const slides = scroller.querySelectorAll('.ww-slide');
+  const totalSlides = slides.length;
 
-  // Snap to nearest slide after idle
-  function maybeSnap(force = false) {
-    const now = performance.now();
-    const since = now - lastWheel;
-    if (!force && since < snapDelay) return;
+  // Helper: get slide width
+  const getSlideWidth = () => scroller.clientWidth;
 
-    const w = slideW();
-    const rawIndex = scroller.scrollLeft / w;
-    const targetIndex = Math.round(rawIndex);
-    const targetLeft = targetIndex * w;
-    const delta = Math.abs(scroller.scrollLeft - targetLeft);
-
-    if (delta > minSnapDelta) {
-      scroller.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  // Helper: update current slide index based on scroll position
+  function updateCurrentSlide() {
+    const slideWidth = getSlideWidth();
+    const newSlide = Math.round(scroller.scrollLeft / slideWidth);
+    if (newSlide !== currentSlide) {
+      currentSlide = newSlide;
+      updateIndicators(currentSlide);
+      saveCurrentIndex(currentSlide);
     }
-    saveCurrentIndex();
   }
 
-  // Save current slide index to sessionStorage
-  function saveCurrentIndex() {
+  // Update indicators
+  function updateIndicators(index) {
+    indicators.querySelectorAll('button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === index);
+    });
+  }
+
+  // Save/restore position
+  function saveCurrentIndex(index) {
     try {
-      const w = slideW();
-      const currentIndex = Math.round(scroller.scrollLeft / w);
-      sessionStorage.setItem('carousel.currentSlide', String(currentIndex));
+      sessionStorage.setItem('carousel.currentSlide', String(index));
     } catch {}
   }
 
-  // Restore last viewed slide from sessionStorage
   function restorePosition() {
     try {
       const saved = sessionStorage.getItem('carousel.currentSlide');
       if (saved !== null) {
         const index = parseInt(saved, 10);
-        if (!isNaN(index) && index >= 0 && index < ORDER.length) {
-          const targetLeft = index * slideW();
-          scroller.scrollTo({ left: targetLeft, behavior: 'auto' });
+        if (!isNaN(index) && index >= 0 && index < totalSlides) {
+          scrollToSlide(index, false); // No smooth scroll on restore
         }
       }
     } catch {}
   }
 
-  // Wheel handler with edge pass-through
-  function onWheel(e) {
-    // allow page scroll at edges in direction of travel (no preventDefault)
-    const dy = e.deltaY;
-    const dx = e.deltaX;
-    const intent = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-
-    // Modifiers
-    let mul = 1;
-    if (e.shiftKey) mul *= slowMul;
-    if (e.altKey)   mul *= fastMul;
-
-    // Edge handoff: let page scroll continue if at edge
-    if ((intent > 0 && atRight()) || (intent < 0 && atLeft())) {
-      vx = 0; // kill momentum so we don't pull back
-      return; // let page handle (no preventDefault)
-    }
-
-    // We own the wheel within bounds
-    e.preventDefault();
-
-    // Convert wheel to horizontal velocity kick (normalize a bit for trackpads)
-    const step = (Math.abs(dx) > Math.abs(dy) ? dx : dy) * baseStep * mul * 0.02;
-    vx += step;
-    lastWheel = performance.now();
-    kick();
+  // Scroll to specific slide
+  function scrollToSlide(index, smooth = true) {
+    const targetLeft = index * getSlideWidth();
+    scroller.scrollTo({
+      left: targetLeft,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
   }
 
-  // Keyboard support (Arrow keys + Home/End)
+  // Wheel handler - simple one-slide-at-a-time
+  function onWheel(e) {
+    const delta = e.deltaY || e.deltaX;
+
+    // Ignore tiny movements (trackpad jitter)
+    if (Math.abs(delta) < 5) return;
+
+    // Determine direction
+    const direction = delta > 0 ? 1 : -1;
+    const targetSlide = Math.max(0, Math.min(totalSlides - 1, currentSlide + direction));
+
+    // Edge handoff: let page scroll if at edge and trying to go further
+    if ((targetSlide === currentSlide && direction > 0 && currentSlide === totalSlides - 1) ||
+        (targetSlide === currentSlide && direction < 0 && currentSlide === 0)) {
+      return; // Let page handle scroll
+    }
+
+    // Prevent default and scroll to next/prev slide
+    e.preventDefault();
+    if (targetSlide !== currentSlide) {
+      scrollToSlide(targetSlide, true);
+      currentSlide = targetSlide;
+    }
+  }
+
+  // Keyboard handler
   function onKey(e) {
-    // Home: jump to first slide
     if (e.key === 'Home') {
       e.preventDefault();
-      scroller.scrollTo({ left: 0, behavior: 'smooth' });
-      saveCurrentIndex();
+      scrollToSlide(0);
       return;
     }
 
-    // End: jump to last slide
     if (e.key === 'End') {
       e.preventDefault();
-      const lastSlideLeft = (ORDER.length - 1) * slideW();
-      scroller.scrollTo({ left: lastSlideLeft, behavior: 'smooth' });
-      saveCurrentIndex();
+      scrollToSlide(totalSlides - 1);
       return;
     }
 
-    // Arrow keys: ~80% viewport width
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = Math.min(totalSlides - 1, currentSlide + 1);
+      scrollToSlide(next);
+      return;
+    }
 
-    // Edge handoff for keyboard too
-    if ((dir > 0 && atRight()) || (dir < 0 && atLeft())) return;
-
-    e.preventDefault();
-    const w = slideW();
-    const jumpDist = w * 0.8; // ~80% viewport width
-    scroller.scrollBy({ left: jumpDist * dir, behavior: 'smooth' });
-    lastWheel = performance.now();
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = Math.max(0, currentSlide - 1);
+      scrollToSlide(prev);
+      return;
+    }
   }
 
-  // Make focusable so it reliably receives wheel/keys
-  scroller.tabIndex = 0;
+  // Scroll listener for updating indicators
+  let scrollTimeout;
+  scroller.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(updateCurrentSlide, 100);
+  }, { passive: true });
 
-  // Auto-focus carousel when scrolled into view to ensure wheel events work
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-        // Give focus to scroller so wheel events work without clicking
-        scroller.focus({ preventScroll: true });
-      }
-    });
-  }, { threshold: 0.5 });
-  observer.observe(scroller);
-
-  // Attach listeners
+  // Attach event listeners
   scroller.addEventListener('wheel', onWheel, { passive: false });
   scroller.addEventListener('keydown', onKey);
 
-  // Also listen for wheel on parent wrapper to ensure capture
-  const wrapper = scroller.parentElement;
-  if (wrapper && wrapper.id === 'wonderworks-wrapper') {
-    wrapper.addEventListener('wheel', (e) => {
-      // Forward wheel events to scroller
-      if (!scroller.contains(document.activeElement)) {
-        scroller.focus({ preventScroll: true });
-      }
-      onWheel(e);
-    }, { passive: false });
-  }
-
-  // Optional: snap after manual (touch/drag) scroll settles
-  let snapTimer;
-  scroller.addEventListener('scroll', () => {
-    if (vx !== 0) return; // momentum in progress
-    clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => {
-      maybeSnap(true);
-      saveCurrentIndex();
-    }, 140);
-  }, { passive: true });
-
-  // Mark body for CSS styling
-  document.body.classList.add('in-carousel');
-
-  // Enable snap-to-start for buttery magnetic feel
-  scroller.style.scrollSnapType = 'x mandatory';
-
-  // Add click handler to activate video embeds
-  scroller.querySelectorAll('.video-embed-container').forEach(container => {
-    container.addEventListener('click', () => {
-      container.classList.add('active');
+  // Indicator click handlers
+  indicators.querySelectorAll('button').forEach((btn, index) => {
+    btn.addEventListener('click', () => {
+      scrollToSlide(index);
     });
   });
 
-  // Enforce slide order
-  enforceOrder(scroller);
+  // Setup header + audio bar fade
+  setupBarsFade();
 
-  // Add ARIA labels for accessibility
-  addAccessibilityLabels(scroller);
-
-  // Restore previous position from sessionStorage
-  restorePosition();
-
-  // Setup header fade/show behavior
-  setupHeaderFade();
-
-  // Setup video autoplay on slide visibility
+  // Setup video autoplay
   setupVideoAutoplay(scroller);
 
-  // Console logs for verification
-  console.log('[carousel] order enforced:', ORDER);
-  console.log('[carousel] snap wheel ready (Shift=slow, Alt=fast)');
+  // Restore previous position
+  restorePosition();
+
+  // Initial indicator update
+  updateIndicators(currentSlide);
+
+  console.log('[carousel] initialized:', totalSlides, 'slides');
+  console.log('[carousel] smooth native scroll-snap enabled');
   console.log('[carousel] keyboard: arrows, Home, End');
-  console.log('[carousel] persistence: sessionStorage');
-  console.log('[carousel] a11y: ARIA labels added');
-  console.log('[carousel] header fade/show-on-hover ready');
-  console.log('[carousel] initialized:', scroller);
+}
+
+function createSlideIndicators(scroller) {
+  const slides = scroller.querySelectorAll('.ww-slide');
+  const container = document.createElement('div');
+  container.className = 'carousel-indicators';
+
+  slides.forEach((_, index) => {
+    const btn = document.createElement('button');
+    btn.setAttribute('aria-label', `Go to slide ${index + 1}`);
+    container.appendChild(btn);
+  });
+
+  document.body.appendChild(container);
+  return container;
 }
 
 function setupVideoAutoplay(scroller) {
   const videos = scroller.querySelectorAll('video');
   if (videos.length === 0) return;
 
-  const observerOptions = {
-    root: scroller,
-    threshold: 0.5  // Play when 50% of video is visible
-  };
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting) {
-        video.play().catch(() => {}); // Ignore autoplay failures
+        video.play().catch(() => {});
       } else {
         video.pause();
       }
     });
-  }, observerOptions);
+  }, { root: scroller, threshold: 0.5 });
 
   videos.forEach(video => observer.observe(video));
 }
 
 function enforceOrder(scroller) {
   const rank = new Map(ORDER.map((k, i) => [k, i]));
-  const kids = Array.from(scroller.children).map(el => {
-    const key = el.id || '';
-    return { el, key };
-  });
+  const kids = Array.from(scroller.children).map(el => ({
+    el,
+    key: el.id || ''
+  }));
   kids.sort((a, b) => (rank.get(a.key) ?? 999) - (rank.get(b.key) ?? 999));
   kids.forEach(({ el }) => scroller.appendChild(el));
 }
 
 function addAccessibilityLabels(scroller) {
-  // Container already has role="region" and aria-label in HTML
-  // Add slide-specific ARIA labels
   const slides = scroller.querySelectorAll('.ww-slide');
   const total = slides.length;
 
@@ -287,7 +242,7 @@ function addAccessibilityLabels(scroller) {
   });
 }
 
-function setupHeaderFade() {
+function setupBarsFade() {
   const header = document.querySelector('#site-header');
   const audioBar = document.querySelector('.audio-controls-fixed');
   if (!header) return;
@@ -301,7 +256,7 @@ function setupHeaderFade() {
     idleTimer = setTimeout(() => {
       header.classList.remove('show-on-hover');
       if (audioBar) audioBar.classList.remove('show-on-hover');
-    }, 2000); // hide after 2s of inactivity
+    }, 2000);
   }
 
   // Show bars when mouse moves near top 15% or bottom 15% of viewport
@@ -309,24 +264,21 @@ function setupHeaderFade() {
     if (e.clientY < window.innerHeight * 0.15 || e.clientY > window.innerHeight * 0.85) {
       showBars();
     }
+  }, { passive: true });
+
+  // Show when controls receive focus
+  const headerControls = header.querySelectorAll('a, button, [tabindex]');
+  headerControls.forEach(control => {
+    control.addEventListener('focus', showBars);
   });
 
-  // Show when navigation receives focus
-  const navLinks = header.querySelectorAll('a, button, [tabindex]');
-  navLinks.forEach(link => {
-    link.addEventListener('focus', showBars);
-  });
-
-  // Show when audio controls receive focus
   if (audioBar) {
     const audioControls = audioBar.querySelectorAll('button, input, [tabindex]');
     audioControls.forEach(control => {
       control.addEventListener('focus', showBars);
     });
-    // Show on direct audio bar hover
     audioBar.addEventListener('mouseenter', showBars);
   }
 
-  // Also show on direct header hover
   header.addEventListener('mouseenter', showBars);
 }
