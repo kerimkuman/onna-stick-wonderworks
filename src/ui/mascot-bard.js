@@ -110,7 +110,7 @@ export function initMascotBard({
   const homeContainer = document.getElementById('home-container');
   const homeDoor = document.getElementById('logoDoorway');
   const isHomeEntryVisible = !!(homeContainer && !homeContainer.classList.contains('hidden') && homeDoor);
-  const HOME_POSITION_OFFSET = 8; // Close positioning so hand can touch logo
+  const HOME_POSITION_OFFSET = 0; // Position directly next to logo
   let inHomeMode = false;
   let homeModeCleanup = () => {};
   let homeExitTimer = null;
