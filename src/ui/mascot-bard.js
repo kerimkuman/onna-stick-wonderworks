@@ -117,6 +117,15 @@ export function initMascotBard({
   let pendingHomeLoopHandler = null;
   let homeModeObserver = null;
 
+  // Declare all variables upfront to avoid hoisting issues
+  const pois = collectPOIs();
+  const seen = getSeen();
+  let idleTimer = null;
+  let cooling = false;
+  let destroyed = false;
+  let idleIndex = 0;
+  let fadeTimer = null;
+
   // Ensure Lottie is available (global or module). Expect lottie-web loaded on page.
   const lottieLib = window.lottie || window.bodymovin;
   if (!lottieLib) { console.warn('[mascot] lottie-web not found'); return ()=>{}; }
@@ -259,12 +268,6 @@ export function initMascotBard({
   if (isHomeEntryVisible) {
     activateHomeMode();
   }
-
-  const pois = collectPOIs();
-  const seen = getSeen();
-
-  let idleTimer=null, cooling=false, destroyed=false, idleIndex=0;
-  let fadeTimer=null; // For idle fade behavior
 
   // Idle fade: mascot fades to 0.25 after 2s of no activity
   function armFadeTimer() {
