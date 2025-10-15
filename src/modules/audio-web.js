@@ -121,9 +121,9 @@ function attachUnlockListener() {
       unlocked = true;
       console.log('[audio-web] AudioContext unlocked');
 
-      // Auto-start BGM if it was playing before
+      // Auto-start BGM if it was playing before (don't resume from saved time)
       if (STATE.bgm.playing && !STATE.mutes.music) {
-        playBGM();
+        playBGM(false); // Resume from saved position only on unlock
       }
 
       // Remove listeners
@@ -289,7 +289,7 @@ export function toggleSfxMute() {
 
 // ==================== BGM PLAYBACK ====================
 
-export async function playBGM() {
+export async function playBGM(fromBeginning = true) {
   if (!ctx || !unlocked) {
     console.warn('[audio-web] AudioContext not unlocked yet');
     return;
@@ -310,12 +310,17 @@ export async function playBGM() {
     STATE.bgm.currentSource = null;
   }
 
+  // Always start from beginning when explicitly playing
+  if (fromBeginning) {
+    STATE.bgm.time = 0;
+  }
+
   // Create source
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   source.connect(musicGain);
 
-  // Start from saved time
+  // Start from time (0 if fromBeginning)
   const startTime = Math.min(STATE.bgm.time, buffer.duration - 0.1);
   source.start(0, startTime);
 
@@ -346,7 +351,7 @@ export async function playBGM() {
   musicGain.gain.setValueAtTime(0, now);
   musicGain.gain.linearRampToValueAtTime(STATE.volumes.music, now + 0.35);
 
-  console.log(`[audio-web] BGM playing: track ${STATE.bgm.index + 1}`);
+  console.log(`[audio-web] BGM playing: track ${STATE.bgm.index + 1} (from ${fromBeginning ? 'start' : 'saved position'})`);
 }
 
 export async function pauseBGM() {
@@ -644,14 +649,14 @@ export async function stopLogoHover() {
 
   envelope.gain.cancelScheduledValues(now);
   envelope.gain.setValueAtTime(envelope.gain.value, now);
-  envelope.gain.linearRampToValueAtTime(0, now + 0.15);
+  envelope.gain.linearRampToValueAtTime(0, now + 0.6);
 
   setTimeout(() => {
     if (hoverSfx?.source) {
       hoverSfx.source.stop();
     }
     hoverSfx = null;
-  }, 150);
+  }, 600);
 }
 
 export async function playLogoClick() {

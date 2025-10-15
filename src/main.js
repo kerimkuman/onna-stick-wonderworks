@@ -139,11 +139,11 @@ function initAudioControls() {
         <div class="audio-volume-section">
           <div class="volume-control">
             <span class="volume-label">BGM</span>
-            <input type="range" id="bgm-volume" min="0" max="100" value="50" step="1" />
+            <input type="range" id="bgm-volume" min="0" max="100" value="25" step="1" />
           </div>
           <div class="volume-control">
             <span class="volume-label">Ambient</span>
-            <input type="range" id="ambient-volume" min="0" max="100" value="40" step="1" />
+            <input type="range" id="ambient-volume" min="0" max="100" value="18" step="1" />
           </div>
         </div>
       </div>
@@ -162,6 +162,21 @@ function wireAudioControls() {
   // Initialize track info display
   updateTrackInfo();
 
+  // Sync volume sliders with actual state
+  setTimeout(() => {
+    const state = AudioWeb.getState();
+    const bgmVolume = document.getElementById('bgm-volume');
+    const ambientVolume = document.getElementById('ambient-volume');
+
+    if (bgmVolume) {
+      bgmVolume.value = Math.round(state.volumes.music * 100);
+    }
+    if (ambientVolume) {
+      ambientVolume.value = Math.round(state.volumes.ambient * 100);
+    }
+    console.log('[audio-controls] Volume sliders synced:', state.volumes);
+  }, 100);
+
   // Play/Pause button
   const playPause = document.getElementById('audio-play-pause');
   if (playPause) {
@@ -171,7 +186,7 @@ function wireAudioControls() {
         await AudioWeb.pauseBGM();
         updatePlayPauseButton(true);
       } else {
-        await AudioWeb.playBGM();
+        await AudioWeb.playBGM(true); // Always start from beginning
         updatePlayPauseButton(false);
         updateTrackInfo();
       }
@@ -199,9 +214,6 @@ function wireAudioControls() {
   // BGM volume slider
   const bgmVolume = document.getElementById('bgm-volume');
   if (bgmVolume) {
-    const state = AudioWeb.getState();
-    bgmVolume.value = Math.round(state.volumes.music * 100);
-
     bgmVolume.addEventListener('input', (e) => {
       const sliderValue = parseInt(e.target.value) / 100;
       AudioWeb.setMusicVolume(sliderValue);
@@ -211,9 +223,6 @@ function wireAudioControls() {
   // Ambient volume slider
   const ambientVolume = document.getElementById('ambient-volume');
   if (ambientVolume) {
-    const state = AudioWeb.getState();
-    ambientVolume.value = Math.round(state.volumes.ambient * 100);
-
     ambientVolume.addEventListener('input', (e) => {
       const sliderValue = parseInt(e.target.value) / 100;
       AudioWeb.setAmbientVolume(sliderValue);
@@ -232,7 +241,7 @@ function wireAudioControls() {
           await AudioWeb.pauseBGM();
           updatePlayPauseButton(true);
         } else {
-          await AudioWeb.playBGM();
+          await AudioWeb.playBGM(true); // Always start from beginning
           updatePlayPauseButton(false);
         }
         break;
@@ -362,7 +371,8 @@ function setupWonderworksAmbient() {
     // Track which sections are currently visible
     entries.forEach(entry => {
       const id = entry.target.id;
-      if (entry.isIntersecting) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+        // Only add if more than 50% visible
         visibilityState.add(id);
       } else {
         visibilityState.delete(id);
@@ -377,13 +387,13 @@ function setupWonderworksAmbient() {
       } else {
         AudioWeb.stopAmbient();
       }
-    }, 150);
-  }, { threshold: 0.3 });
+    }, 300);
+  }, { threshold: [0, 0.5, 1] }); // Watch for 50% visibility
 
   sections.forEach(sel => {
     const el = document.querySelector(sel);
     if (el) observer.observe(el);
   });
 
-  console.log('[wonderworks-ambient] IntersectionObserver attached');
+  console.log('[wonderworks-ambient] IntersectionObserver attached (50% threshold)');
 }
