@@ -107,6 +107,16 @@ export function initMascotBard({
   const host = document.getElementById(containerId);
   if(!host) return ()=>{};
 
+  const homeContainer = document.getElementById('home-container');
+  const homeDoor = document.getElementById('logoDoorway');
+  const isHomeEntryVisible = !!(homeContainer && !homeContainer.classList.contains('hidden') && homeDoor);
+  const HOME_POSITION_OFFSET = 24;
+  let inHomeMode = false;
+  let homeModeCleanup = () => {};
+  let homeExitTimer = null;
+  let pendingHomeLoopHandler = null;
+  let homeModeObserver = null;
+
   // Ensure Lottie is available (global or module). Expect lottie-web loaded on page.
   const lottieLib = window.lottie || window.bodymovin;
   if (!lottieLib) { console.warn('[mascot] lottie-web not found'); return ()=>{}; }
@@ -128,6 +138,128 @@ export function initMascotBard({
   const textEl = bubble.querySelector('.mb-text');
   const ctaEl = bubble.querySelector('.mb-cta');
 
+  function updateHomeMascotPosition(){
+    if (!inHomeMode || !homeDoor) return;
+    const rect = homeDoor.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+
+    const computed = getComputedStyle(host);
+    const fallbackWidth = parseFloat(computed.width) || 0;
+    const hostWidth = host.offsetWidth || host.getBoundingClientRect().width || fallbackWidth || 280;
+    const top = rect.top + rect.height / 2;
+    let left = rect.right + HOME_POSITION_OFFSET;
+    let translateX = '0';
+
+    if (left + hostWidth > window.innerWidth - HOME_POSITION_OFFSET) {
+      left = rect.left - HOME_POSITION_OFFSET;
+      translateX = '-100%';
+    }
+
+    host.style.top = `${top}px`;
+    host.style.left = `${left}px`;
+    host.style.setProperty('--mascot-home-translate-x', translateX);
+  }
+
+  function activateHomeMode(){
+    if (!isHomeEntryVisible || inHomeMode) return;
+    homeModeCleanup();
+    if (homeExitTimer) {
+      clearTimeout(homeExitTimer);
+      homeExitTimer = null;
+    }
+    inHomeMode = true;
+    host.classList.add('mascot-home-mode');
+    host.classList.remove('mascot-home-exit');
+    host.style.removeProperty('display');
+    clearTimeout(fadeTimer);
+    host.style.opacity = '1';
+
+    const startLoop = () => {
+      anim.loop = true;
+      anim.goToAndPlay(0, true);
+    };
+
+    if (pendingHomeLoopHandler) {
+      anim.removeEventListener('DOMLoaded', pendingHomeLoopHandler);
+      pendingHomeLoopHandler = null;
+    }
+
+    if (anim.isLoaded) {
+      startLoop();
+    } else {
+      pendingHomeLoopHandler = startLoop;
+      anim.addEventListener('DOMLoaded', startLoop);
+    }
+
+    updateHomeMascotPosition();
+    requestAnimationFrame(() => {
+      updateHomeMascotPosition();
+      host.classList.add('mascot-home-visible');
+    });
+
+    const reposition = () => updateHomeMascotPosition();
+    const doorListener = () => exitHomeMode();
+
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, { passive: true });
+    homeDoor?.addEventListener('click', doorListener, { once: true });
+
+    if (homeContainer && !homeModeObserver) {
+      homeModeObserver = new MutationObserver(() => {
+        if (!inHomeMode) return;
+        if (!homeContainer.classList.contains('hidden')) return;
+        exitHomeMode();
+      });
+      homeModeObserver.observe(homeContainer, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    homeModeCleanup = () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition);
+      homeDoor?.removeEventListener('click', doorListener);
+      homeModeObserver?.disconnect();
+      homeModeObserver = null;
+      if (pendingHomeLoopHandler) {
+        anim.removeEventListener('DOMLoaded', pendingHomeLoopHandler);
+        pendingHomeLoopHandler = null;
+      }
+    };
+  }
+
+  function exitHomeMode(){
+    if (!inHomeMode) return;
+    inHomeMode = false;
+    homeModeCleanup();
+    homeModeCleanup = () => {};
+    if (pendingHomeLoopHandler) {
+      anim.removeEventListener('DOMLoaded', pendingHomeLoopHandler);
+      pendingHomeLoopHandler = null;
+    }
+
+    anim.loop = false;
+    anim.stop();
+    host.classList.remove('mascot-home-visible');
+    host.classList.add('mascot-home-exit');
+    hide();
+
+    homeExitTimer = setTimeout(() => {
+      host.classList.remove('mascot-home-mode', 'mascot-home-exit');
+      host.style.removeProperty('left');
+      host.style.removeProperty('top');
+      host.style.removeProperty('--mascot-home-translate-x');
+      host.style.removeProperty('display');
+      host.style.opacity = '';
+      host.style.transform = '';
+      showMascot();
+      armFadeTimer();
+      homeExitTimer = null;
+    }, 420);
+  }
+
+  if (isHomeEntryVisible) {
+    activateHomeMode();
+  }
+
   const pois = collectPOIs();
   const seen = getSeen();
 
@@ -136,6 +268,7 @@ export function initMascotBard({
 
   // Idle fade: mascot fades to 0.25 after 2s of no activity
   function armFadeTimer() {
+    if (inHomeMode) return;
     clearTimeout(fadeTimer);
     host.style.opacity = '1';
     fadeTimer = setTimeout(() => {
@@ -153,6 +286,7 @@ export function initMascotBard({
   // Track pointer near audio bar (within 64px)
   const audioBar = document.getElementById('audio-controls');
   document.addEventListener('pointermove', (e) => {
+    if (inHomeMode) return;
     if (!audioBar) return;
     const barRect = audioBar.getBoundingClientRect();
     const hostRect = host.getBoundingClientRect();
@@ -212,6 +346,7 @@ export function initMascotBard({
 
   // Global click celebration - mascot waves when user clicks anywhere
   document.addEventListener('click', (e) => {
+    if (inHomeMode) return;
     // Skip if clicking mascot itself (handled above) or inside bubble
     if (host.contains(e.target) || bubble.contains(e.target)) return;
 
@@ -259,6 +394,7 @@ export function initMascotBard({
   }
 
   function tryPOI(){
+    if (inHomeMode) return false;
     for(const p of pois){
       if(seen.has(p.id)) continue;
       if(!p.el.offsetParent || !inView(p.el)) continue;
@@ -274,6 +410,7 @@ export function initMascotBard({
   }
 
   function tryIdle(){
+    if (inHomeMode) return false;
     const showOnce = oncePerSession(IDLE_KEY);
     if(!showOnce) return false; // one idle hint per session
     const line = nextIdleLine();
@@ -285,7 +422,7 @@ export function initMascotBard({
   }
 
   function tick(){
-    if(destroyed || cooling) return;
+    if(destroyed || cooling || inHomeMode) return;
     // DISABLED: POI auto-show - mascot only speaks when clicked now
     // if(tryPOI()) { cool(); return; }
     if(tryIdle()) { cool(); return; }
@@ -316,6 +453,17 @@ export function initMascotBard({
 
   return ()=>{
     destroyed = true;
+    homeModeCleanup();
+    homeModeCleanup = () => {};
+    if (homeExitTimer) {
+      clearTimeout(homeExitTimer);
+      homeExitTimer = null;
+    }
+    if (pendingHomeLoopHandler) {
+      anim.removeEventListener('DOMLoaded', pendingHomeLoopHandler);
+      pendingHomeLoopHandler = null;
+    }
+    homeModeObserver = null;
     anim?.destroy();
     bubble.remove();
     if(idleTimer) clearTimeout(idleTimer);
