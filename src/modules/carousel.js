@@ -146,13 +146,19 @@ export function initCarousel() {
     e.preventDefault();
     if (targetSlide !== currentSlide) {
       isScrolling = true;
+
+      // Optimistically update currentSlide to prevent race conditions
+      currentSlide = targetSlide;
+      updateIndicators(currentSlide);
+      saveCurrentIndex(currentSlide);
+
       scrollToSlide(targetSlide, true);
 
       // Allow next scroll after animation completes
       clearTimeout(wheelTimeout);
       wheelTimeout = setTimeout(() => {
         isScrolling = false;
-      }, 400); // Debounce for smooth scrolling
+      }, 600); // Increased to ensure smooth scroll completes
     }
   }
 
@@ -160,12 +166,16 @@ export function initCarousel() {
   function onKey(e) {
     if (e.key === 'Home') {
       e.preventDefault();
+      currentSlide = 0;
+      updateIndicators(currentSlide);
       scrollToSlide(0);
       return;
     }
 
     if (e.key === 'End') {
       e.preventDefault();
+      currentSlide = totalSlides - 1;
+      updateIndicators(currentSlide);
       scrollToSlide(totalSlides - 1);
       return;
     }
@@ -173,6 +183,8 @@ export function initCarousel() {
     if (e.key === 'ArrowRight') {
       e.preventDefault();
       const next = Math.min(totalSlides - 1, currentSlide + 1);
+      currentSlide = next;
+      updateIndicators(currentSlide);
       scrollToSlide(next);
       return;
     }
@@ -180,6 +192,8 @@ export function initCarousel() {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       const prev = Math.max(0, currentSlide - 1);
+      currentSlide = prev;
+      updateIndicators(currentSlide);
       scrollToSlide(prev);
       return;
     }
@@ -188,8 +202,12 @@ export function initCarousel() {
   // Scroll listener for updating indicators
   let scrollTimeout;
   scroller.addEventListener('scroll', () => {
+    // Immediate update on scroll for responsive indicators
+    updateCurrentSlide();
+
+    // Also debounced update for smooth native scrolling
     clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(updateCurrentSlide, 50);
+    scrollTimeout = setTimeout(updateCurrentSlide, 100);
   }, { passive: true });
 
   // Attach event listeners
@@ -199,6 +217,8 @@ export function initCarousel() {
   // Indicator click handlers
   indicators.querySelectorAll('button').forEach((btn, index) => {
     btn.addEventListener('click', () => {
+      currentSlide = index;
+      updateIndicators(currentSlide);
       scrollToSlide(index);
     });
   });
