@@ -110,7 +110,7 @@ export function initMascotBard({
   const homeContainer = document.getElementById('home-container');
   const homeDoor = document.getElementById('logoDoorway');
   const isHomeEntryVisible = !!(homeContainer && !homeContainer.classList.contains('hidden') && homeDoor);
-  const HOME_POSITION_OFFSET = 24;
+  const HOME_POSITION_OFFSET = 8; // Close positioning so hand can touch logo
   let inHomeMode = false;
   let homeModeCleanup = () => {};
   let homeExitTimer = null;
@@ -156,12 +156,12 @@ export function initMascotBard({
     const fallbackWidth = parseFloat(computed.width) || 0;
     const hostWidth = host.offsetWidth || host.getBoundingClientRect().width || fallbackWidth || 280;
     const top = rect.top + rect.height / 2;
-    let left = rect.right + HOME_POSITION_OFFSET;
-    let translateX = '0';
+    let left = rect.left - HOME_POSITION_OFFSET;
+    let translateX = '-100%';
 
-    if (left + hostWidth > window.innerWidth - HOME_POSITION_OFFSET) {
-      left = rect.left - HOME_POSITION_OFFSET;
-      translateX = '-100%';
+    if (left < HOME_POSITION_OFFSET) {
+      left = rect.right + HOME_POSITION_OFFSET;
+      translateX = '0';
     }
 
     host.style.top = `${top}px`;
