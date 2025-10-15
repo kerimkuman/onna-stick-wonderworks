@@ -557,6 +557,7 @@ body.in-carousel .carousel-indicators {
   transition: transform 0.22s ease, filter 0.22s ease;
   transform-origin: center;
   animation: logoBreath 3s ease-in-out infinite;
+  position: relative; /* For pseudo-element positioning */
 }
 
 @keyframes logoBreath {
@@ -579,20 +580,12 @@ body.in-carousel .carousel-indicators {
   }
 }
 
-@keyframes logoGlowPulse {
+@keyframes glowPulse {
   0%, 100% {
-    filter:
-      drop-shadow(0 0 20px rgba(147, 112, 219, 1))
-      drop-shadow(0 0 35px rgba(199, 21, 133, 0.9))
-      drop-shadow(0 0 50px rgba(138, 182, 255, 0.8))
-      brightness(1.15);
+    opacity: 0.6;
   }
   50% {
-    filter:
-      drop-shadow(0 0 30px rgba(199, 21, 133, 1))
-      drop-shadow(0 0 45px rgba(138, 182, 255, 0.9))
-      drop-shadow(0 0 60px rgba(147, 112, 219, 0.8))
-      brightness(1.2);
+    opacity: 1;
   }
 }
 
@@ -603,14 +596,41 @@ body.in-carousel .carousel-indicators {
   }
 }
 
+/* Pseudo-element for GPU-accelerated glow effect */
+#logoDoorway::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  will-change: opacity;
+  z-index: -1;
+}
+
+#logoDoorway:hover::before {
+  animation: glowPulse 1.5s ease-in-out infinite;
+  box-shadow:
+    0 0 30px 15px rgba(147, 112, 219, 0.8),
+    0 0 50px 25px rgba(199, 21, 133, 0.6),
+    0 0 70px 35px rgba(138, 182, 255, 0.4);
+}
+
 #logoDoorway:hover {
-  animation: logoSway 2s ease-in-out infinite, logoGlowPulse 1.5s ease-in-out infinite;
-  will-change: transform, filter;
+  animation: logoSway 2s ease-in-out infinite;
+  will-change: transform;
+  filter: brightness(1.12);
 }
 
 #logoDoorway:active {
   animation: none;
   transform: scale(0.98);
+}
+
+#logoDoorway:active::before {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -621,6 +641,10 @@ body.in-carousel .carousel-indicators {
   #logoDoorway:hover {
     transform: none;
     filter: brightness(1.05);
+  }
+  #logoDoorway::before,
+  #logoDoorway:hover::before {
+    animation: none;
   }
 }
 
