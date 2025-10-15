@@ -165,9 +165,32 @@ export function initCarousel() {
   // Make focusable so it reliably receives wheel/keys
   scroller.tabIndex = 0;
 
+  // Auto-focus carousel when scrolled into view to ensure wheel events work
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+        // Give focus to scroller so wheel events work without clicking
+        scroller.focus({ preventScroll: true });
+      }
+    });
+  }, { threshold: 0.5 });
+  observer.observe(scroller);
+
   // Attach listeners
   scroller.addEventListener('wheel', onWheel, { passive: false });
   scroller.addEventListener('keydown', onKey);
+
+  // Also listen for wheel on parent wrapper to ensure capture
+  const wrapper = scroller.parentElement;
+  if (wrapper && wrapper.id === 'wonderworks-wrapper') {
+    wrapper.addEventListener('wheel', (e) => {
+      // Forward wheel events to scroller
+      if (!scroller.contains(document.activeElement)) {
+        scroller.focus({ preventScroll: true });
+      }
+      onWheel(e);
+    }, { passive: false });
+  }
 
   // Optional: snap after manual (touch/drag) scroll settles
   let snapTimer;
@@ -266,31 +289,44 @@ function addAccessibilityLabels(scroller) {
 
 function setupHeaderFade() {
   const header = document.querySelector('#site-header');
+  const audioBar = document.querySelector('.audio-controls-fixed');
   if (!header) return;
 
   let idleTimer = null;
 
-  function showHeader() {
+  function showBars() {
     header.classList.add('show-on-hover');
+    if (audioBar) audioBar.classList.add('show-on-hover');
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       header.classList.remove('show-on-hover');
+      if (audioBar) audioBar.classList.remove('show-on-hover');
     }, 2000); // hide after 2s of inactivity
   }
 
-  // Show header when mouse moves near top 15% of viewport
+  // Show bars when mouse moves near top 15% or bottom 15% of viewport
   document.addEventListener('mousemove', (e) => {
-    if (e.clientY < window.innerHeight * 0.15) {
-      showHeader();
+    if (e.clientY < window.innerHeight * 0.15 || e.clientY > window.innerHeight * 0.85) {
+      showBars();
     }
   });
 
   // Show when navigation receives focus
   const navLinks = header.querySelectorAll('a, button, [tabindex]');
   navLinks.forEach(link => {
-    link.addEventListener('focus', showHeader);
+    link.addEventListener('focus', showBars);
   });
 
+  // Show when audio controls receive focus
+  if (audioBar) {
+    const audioControls = audioBar.querySelectorAll('button, input, [tabindex]');
+    audioControls.forEach(control => {
+      control.addEventListener('focus', showBars);
+    });
+    // Show on direct audio bar hover
+    audioBar.addEventListener('mouseenter', showBars);
+  }
+
   // Also show on direct header hover
-  header.addEventListener('mouseenter', showHeader);
+  header.addEventListener('mouseenter', showBars);
 }

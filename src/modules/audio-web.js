@@ -255,7 +255,7 @@ export function toggleMusicMute() {
   }
 
   saveState();
-  return !STATE.mutes.music;
+  return STATE.mutes.music;
 }
 
 export function toggleAmbient() {
@@ -283,7 +283,7 @@ export function toggleSfxMute() {
   }
 
   saveState();
-  return !STATE.mutes.sfx;
+  return STATE.mutes.sfx;
 }
 
 // ==================== BGM PLAYBACK ====================

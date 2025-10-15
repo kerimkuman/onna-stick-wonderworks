@@ -337,7 +337,6 @@ function setupHomepageSfx() {
   logoDoorway.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      AudioWeb.playLogoClick();
       logoDoorway.click();
     }
   });
