@@ -35,8 +35,21 @@ export function initCarousel() {
   // Create slide indicators
   const indicators = createSlideIndicators(scroller);
 
-  // Mark body for CSS styling
-  document.body.classList.add('in-carousel');
+  // Observe carousel section - only add 'in-carousel' class when visible
+  const carouselSection = document.querySelector('#wonderworks-wrapper');
+  if (carouselSection) {
+    const carouselObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          document.body.classList.add('in-carousel');
+        } else {
+          document.body.classList.remove('in-carousel');
+        }
+      });
+    }, { threshold: 0.1 }); // Trigger when 10% visible
+
+    carouselObserver.observe(carouselSection);
+  }
 
   // Enable native scroll-snap for buttery smooth scrolling
   scroller.style.scrollSnapType = 'x mandatory';
