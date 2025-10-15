@@ -600,7 +600,7 @@ body.in-carousel .carousel-indicators {
 #logoDoorway::before {
   content: '';
   position: absolute;
-  inset: -5%;  /* Minimal expansion for tight glow */
+  inset: 0;  /* Match logo size exactly - no gap */
   border-radius: 50%;
   background: transparent;
   pointer-events: none;
@@ -614,9 +614,9 @@ body.in-carousel .carousel-indicators {
   opacity: 1;
   animation: glowPulseSmooth 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   box-shadow:
-    0 0 20px 2px rgba(147, 112, 219, 0.9),
-    0 0 35px 4px rgba(199, 21, 133, 0.7),
-    0 0 50px 6px rgba(138, 182, 255, 0.5);
+    0 0 20px 0px rgba(147, 112, 219, 1),
+    0 0 40px 0px rgba(199, 21, 133, 0.8),
+    0 0 60px 0px rgba(138, 182, 255, 0.6);
 }
 
 #logoDoorway:hover {
