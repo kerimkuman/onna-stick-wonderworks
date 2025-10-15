@@ -580,9 +580,9 @@ body.in-carousel .carousel-indicators {
   }
 }
 
-@keyframes glowPulse {
+@keyframes glowPulseSmooth {
   0%, 100% {
-    opacity: 0.6;
+    opacity: 0.7;
   }
   50% {
     opacity: 1;
@@ -600,29 +600,27 @@ body.in-carousel .carousel-indicators {
 #logoDoorway::before {
   content: '';
   position: absolute;
-  inset: -15%;  /* Slightly larger for glow spread */
+  inset: -5%;  /* Minimal expansion for tight glow */
   border-radius: 50%;
-  background: radial-gradient(
-    circle at center,
-    rgba(147, 112, 219, 0.9) 0%,
-    rgba(199, 21, 133, 0.7) 40%,
-    rgba(138, 182, 255, 0.5) 70%,
-    transparent 100%
-  );
+  background: transparent;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s ease-out;
   will-change: opacity;
   z-index: -1;
-  filter: blur(8px);
 }
 
 #logoDoorway:hover::before {
-  animation: glowPulse 1.5s ease-in-out infinite;
+  opacity: 1;
+  animation: glowPulseSmooth 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  box-shadow:
+    0 0 20px 2px rgba(147, 112, 219, 0.9),
+    0 0 35px 4px rgba(199, 21, 133, 0.7),
+    0 0 50px 6px rgba(138, 182, 255, 0.5);
 }
 
 #logoDoorway:hover {
-  animation: logoSway 2s ease-in-out infinite;
+  animation: logoSway 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   will-change: transform;
   filter: brightness(1.12);
 }
