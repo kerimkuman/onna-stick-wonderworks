@@ -19,7 +19,7 @@ export function initPageSetup() {
   // Handle logo doorway button
   if (logoDoorway) {
     logoDoorway.addEventListener('click', () => {
-      enterSite();
+      enterSite('wonderworks-intro');
     });
   }
 
